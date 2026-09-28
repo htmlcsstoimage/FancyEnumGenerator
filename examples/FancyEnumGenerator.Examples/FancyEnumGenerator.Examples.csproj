@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <!--
+          Checked into source control on purpose: this is the "after" half of the before/after example pair
+          referenced from the README. EmitCompilerGeneratedFiles writes the generator's actual output to disk
+          instead of keeping it purely in-memory, and CompilerGeneratedFilesOutputPath points that output at a
+          plain folder next to the source (not under obj/), so it isn't swept up by .gitignore's bin/obj rules.
+        -->
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\FancyEnumGenerator\FancyEnumGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\..\src\FancyEnumGenerator.Attributes\FancyEnumGenerator.Attributes.csproj" />
+    </ItemGroup>
+
+    <!--
+      Generated/ persists across builds (that's the point - it's checked in), so the SDK's default **/*.cs
+      glob would otherwise pick up last build's copy and compile it a second time alongside the live
+      analyzer output, colliding on every type it defines. These files are for browsing, not for building.
+    -->
+    <ItemGroup>
+        <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+    </ItemGroup>
+
+</Project>

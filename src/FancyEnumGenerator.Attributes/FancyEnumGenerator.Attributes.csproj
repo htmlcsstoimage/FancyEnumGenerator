@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <!--
+          This is the package's entire public API surface, so its XML docs ship in lib/ for IntelliSense, and a
+          missing doc comment (CS1591) is a build error rather than something that quietly slips into a release.
+        -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <WarningsAsErrors>$(WarningsAsErrors);CS1591;CS1573;CS1574</WarningsAsErrors>
+    </PropertyGroup>
+
+</Project>

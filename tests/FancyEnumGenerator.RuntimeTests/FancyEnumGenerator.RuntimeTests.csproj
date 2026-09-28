@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      Runtime behavior of the generated code: the enums under Enums/ are compiled by the real generator (wired in as an
+      analyzer, exactly as the NuGet package does), and the tests call what it produced. Built with doc generation,
+      warnings as errors and no implicit usings, the strictest settings a consumer could plausibly use, so any warning
+      leaking out of generated code fails this build too.
+    -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- Test code itself isn't public API; generated code is still held to CS1591 via the generator tests. -->
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3" Version="4.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\FancyEnumGenerator\FancyEnumGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\..\src\FancyEnumGenerator.Attributes\FancyEnumGenerator.Attributes.csproj" />
+    </ItemGroup>
+
+</Project>

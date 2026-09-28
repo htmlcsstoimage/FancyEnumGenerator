@@ -1,0 +1,86 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>true</IsPackable>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <PackageType>Analyzer</PackageType>
+        <!--
+          Deliberately not a DevelopmentDependency: `dotnet add package` writes IncludeAssets without "compile"
+          for development dependencies, which would strip the lib/ reference to the attributes assembly below
+          and leave [FancyEnum] unresolvable in the consumer's own code.
+        -->
+        <DevelopmentDependency>false</DevelopmentDependency>
+        <PackageId>FancyEnumGenerator</PackageId>
+        <PackageOutputPath>$(MSBuildProjectDirectory)/../../artifacts</PackageOutputPath>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <IsRoslynComponent>true</IsRoslynComponent>
+        <IsAnalyzer>true</IsAnalyzer>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+        <IsRidAgnostic>true</IsRidAgnostic>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Title>FancyEnumGenerator</Title>
+        <Authors>HTML/CSS to Image</Authors>
+        <Description>A Roslyn incremental source generator that gives C# enums fast, allocation-conscious extension members: switch-based ToString and Parse/TryParse (char and UTF-8), flags helpers, and arbitrary per-member field mappings declared as attributes - all generated at compile time, no reflection.</Description>
+        <PackageTags>enum;enums;source-generator;roslyn;analyzer;tostring;parse;flags;performance</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/htmlcsstoimage/FancyEnumGenerator</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/htmlcsstoimage/FancyEnumGenerator</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+        <PackageReference Include="Polyfill" Version="11.0.2">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\FancyEnumGenerator.Attributes\FancyEnumGenerator.Attributes.csproj" PrivateAssets="all" />
+    </ItemGroup>
+
+    <!--
+      The generator itself needs FancyEnumGenerator.Attributes.dll loaded alongside it at analyzer-load time
+      (it resolves attribute types via typeof()). GetTargetPath is invoked on the referenced project
+      dynamically rather than hardcoding a relative bin path, so this keeps working if the TFM or output
+      layout ever changes.
+    -->
+    <PropertyGroup>
+        <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
+    </PropertyGroup>
+    <Target Name="GetDependencyTargetPaths">
+        <MSBuild Projects="@(ProjectReference)" Targets="GetTargetPath">
+            <Output TaskParameter="TargetOutputs" ItemName="_FancyEnumDependencyTargetPaths" />
+        </MSBuild>
+        <ItemGroup>
+            <TargetPathWithTargetPlatformMoniker Include="@(_FancyEnumDependencyTargetPaths)" IncludeRuntimeDependency="false" />
+        </ItemGroup>
+    </Target>
+
+    <ItemGroup>
+        <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+        <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    </ItemGroup>
+
+    <!--
+      The attributes assembly ships twice, for two different consumers:
+        - analyzers/dotnet/cs: loaded next to the generator in the compiler process.
+        - lib/netstandard2.0 (+ its XML docs): the compile reference for the consuming project's own code, so
+          [FancyEnum] etc. resolve and show documentation in IntelliSense. Analyzer folders are never compile
+          references, so without this copy a PackageReference consumer can't use the attributes at all.
+    -->
+    <ItemGroup>
+        <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)FancyEnumGenerator.Attributes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)FancyEnumGenerator.Attributes.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+        <None Include="$(OutputPath)FancyEnumGenerator.Attributes.xml" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+        <None Include="buildTransitive\FancyEnumGenerator.targets" Pack="true" PackagePath="buildTransitive\FancyEnumGenerator.targets" />
+        <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
+    </ItemGroup>
+
+</Project>

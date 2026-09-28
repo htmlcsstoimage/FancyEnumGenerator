@@ -1,0 +1,24 @@
+<Project>
+  <!--
+    Makes these MSBuild properties visible to the FancyEnumGenerator analyzer via
+    AnalyzerConfigOptionsProvider.GlobalOptions, so a consumer can set e.g.
+    <FancyEnumAllowNoUnknown>true</FancyEnumAllowNoUnknown> in their own .csproj or
+    Directory.Build.props as a repo-wide default, without touching source code.
+    See [assembly: FancyEnumDefaults(...)] for the source-level equivalent.
+  -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="FancyEnumAllowNoUnknown" />
+    <CompilerVisibleProperty Include="FancyEnumAllowNonContiguous" />
+    <CompilerVisibleProperty Include="FancyEnumNoInlineArray" />
+    <CompilerVisibleProperty Include="FancyEnumCreateStaticReadonlyCollection" />
+    <CompilerVisibleProperty Include="FancyEnumIncludeObsolete" />
+    <CompilerVisibleProperty Include="FancyEnumDefaultToStringBehavior" />
+    <CompilerVisibleProperty Include="FancyEnumDefaultToStringCustomField" />
+    <CompilerVisibleProperty Include="FancyEnumCreateTryFormat" />
+    <CompilerVisibleProperty Include="FancyEnumCreateByteParsing" />
+    <CompilerVisibleProperty Include="FancyEnumCreateIsValidPrefix" />
+    <CompilerVisibleProperty Include="FancyEnumParseCaseSensitive" />
+    <CompilerVisibleProperty Include="FancyEnumGenerateParseMethods" />
+    <CompilerVisibleProperty Include="FancyEnumUseGeneratedFileSuffix" />
+  </ItemGroup>
+</Project>

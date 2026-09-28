@@ -55,3 +55,10 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+/.idea
+
+# BenchmarkDotNet run output (curated results live in docs/benchmarks.md)
+BenchmarkDotNet.Artifacts/
+
+# Rider per-user settings
+*.DotSettings.user

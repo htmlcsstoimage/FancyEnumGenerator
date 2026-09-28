@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      Generator-level tests: run FancyEnumSourceGenerator in-memory over source strings via CSharpGeneratorDriver,
+      then assert its diagnostics, compile what it produced against several reference sets and option sets, and
+      check incremental caching. Behavior of the generated code at runtime lives in FancyEnumGenerator.RuntimeTests.
+    -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3" Version="4.0.1" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+        <PackageReference Include="Basic.Reference.Assemblies.Net100" Version="1.8.12" />
+        <PackageReference Include="Basic.Reference.Assemblies.NetStandard20" Version="1.8.12" />
+        <!--
+          Only for its netstandard2.0 reference assembly, copied next to the tests below: downlevel consumers get
+          ReadOnlySpan<T> from this package, so the netstandard2.0 compile profile needs it. Never loaded at runtime.
+        -->
+        <PackageReference Include="System.Memory" Version="4.6.3" GeneratePathProperty="true" ExcludeAssets="all" NoWarn="NU1510" />
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\FancyEnumGenerator\FancyEnumGenerator.csproj" />
+        <ProjectReference Include="..\..\src\FancyEnumGenerator.Attributes\FancyEnumGenerator.Attributes.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="$(PkgSystem_Memory)/lib/netstandard2.0/System.Memory.dll" Link="refs/netstandard2.0/System.Memory.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    </ItemGroup>
+
+</Project>

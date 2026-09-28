@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FancyEnumGenerator/FancyEnumGenerator.csproj" />
+    <Project Path="src/FancyEnumGenerator.Attributes/FancyEnumGenerator.Attributes.csproj" />
+  </Folder>
+  <Folder Name="/examples/">
+    <Project Path="examples/FancyEnumGenerator.Examples/FancyEnumGenerator.Examples.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <File Path="benchmarks\generate_subjects.cs" />
+    <Project Path="benchmarks/FancyEnumGenerator.Benchmarks/FancyEnumGenerator.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FancyEnumGenerator.Tests/FancyEnumGenerator.Tests.csproj" />
+    <Project Path="tests/FancyEnumGenerator.RuntimeTests/FancyEnumGenerator.RuntimeTests.csproj" />
+  </Folder>
+</Solution>
