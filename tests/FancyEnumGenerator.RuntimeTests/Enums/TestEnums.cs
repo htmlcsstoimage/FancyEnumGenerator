@@ -179,6 +179,24 @@ public enum ManyWireNames
     Date,
 }
 
+[FancyEnumMemberSet]
+[AttributeUsage(AttributeTargets.Field)]
+public sealed class CodeInfoAttribute : Attribute
+{
+    [FancyEnumMemberSetItem(ParseFrom = true)]
+    public string? Tag { get; set; }
+}
+
+/// <summary>Field parsers inherit the enum's ParseCaseSensitive unless they set their own.</summary>
+[FancyEnum(ParseCaseSensitive = false)]
+[FancyEnumMemberMappingSettings("Code", ParseFrom = true)]
+[FancyEnumMemberMappingSettings("StrictCode", ParseFrom = true, ParseCaseSensitive = true)]
+public enum InheritsCase
+{
+    Unknown,
+    [FancyEnumMember("Code", "ab"), FancyEnumMember("StrictCode", "xy"), CodeInfo(Tag = "tg")] First,
+}
+
 [FancyEnum(AllowNoUnknown = true, AllowNonContiguous = true)]
 public enum Sparse : short
 {

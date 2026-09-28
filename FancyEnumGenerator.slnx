@@ -1,4 +1,21 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="global.json" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/release.yml" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/benchmarks.md" />
+    <File Path="docs/how-it-works.md" />
+    <File Path="docs/is-valid-prefix.md" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/FancyEnumGenerator/FancyEnumGenerator.csproj" />
     <Project Path="src/FancyEnumGenerator.Attributes/FancyEnumGenerator.Attributes.csproj" />
@@ -13,5 +30,14 @@
   <Folder Name="/tests/">
     <Project Path="tests/FancyEnumGenerator.Tests/FancyEnumGenerator.Tests.csproj" />
     <Project Path="tests/FancyEnumGenerator.RuntimeTests/FancyEnumGenerator.RuntimeTests.csproj" />
+  </Folder>
+  <!--
+    The package smoke test restores the packed .nupkg from artifacts/, so as a project it would make the solution
+    unbuildable until `dotnet pack` has run. Its files are listed here instead; CI builds and runs it after packing.
+  -->
+  <Folder Name="/tests/FancyEnumGenerator.PackageTests/">
+    <File Path="tests/FancyEnumGenerator.PackageTests/FancyEnumGenerator.PackageTests.csproj" />
+    <File Path="tests/FancyEnumGenerator.PackageTests/Enums.cs" />
+    <File Path="tests/FancyEnumGenerator.PackageTests/Program.cs" />
   </Folder>
 </Solution>

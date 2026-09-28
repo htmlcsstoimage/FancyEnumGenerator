@@ -164,7 +164,8 @@ public sealed class FancyEnumAttribute : Attribute
 
     /// <summary>
     /// Whether the overloads of <c>TryParseFancy</c>/<c>ParseOrUnknown</c> without an <c>ignoreCase</c> parameter
-    /// compare case-sensitively. Default: <see langword="true"/>.
+    /// compare case-sensitively. Also the default for this enum's field parsers (<c>TryParseFrom_*</c>) that don't set
+    /// their own. Default: <see langword="true"/>.
     /// </summary>
     public bool ParseCaseSensitive { get; set; } = true;
 }
@@ -274,9 +275,10 @@ public sealed class FancyEnumMemberMappingSettingsAttribute(string fieldName) : 
 
     /// <summary>
     /// Whether the <c>TryParseFrom_{FieldName}</c> overload without an <c>ignoreCase</c> parameter compares
-    /// case-sensitively. Default: <see langword="true"/>.
+    /// case-sensitively. When not set, inherits the enum's <see cref="FancyEnumAttribute.ParseCaseSensitive"/>
+    /// (itself defaulted assembly-wide or via MSBuild like any other option).
     /// </summary>
-    public bool ParseCaseSensitive { get; set; } = true;
+    public bool ParseCaseSensitive { get; set; }
 
     /// <summary>
     /// Also generate <c>TryFormat_{FieldName}(Span&lt;char&gt; destination, out int charsWritten)</c> and a
@@ -333,9 +335,10 @@ public sealed class FancyEnumMemberMappingSettingsAttribute<T>(string fieldName)
 
     /// <summary>
     /// Whether the <c>TryParseFrom_{FieldName}</c> overload without an <c>ignoreCase</c> parameter compares
-    /// case-sensitively. Default: <see langword="true"/>.
+    /// case-sensitively. When not set, inherits the enum's <see cref="FancyEnumAttribute.ParseCaseSensitive"/>
+    /// (itself defaulted assembly-wide or via MSBuild like any other option).
     /// </summary>
-    public bool ParseCaseSensitive { get; set; } = true;
+    public bool ParseCaseSensitive { get; set; }
 
     /// <summary>String fields only: also generate a UTF-8 <c>{FieldName}Bytes</c> property.</summary>
     public bool IncludeUtf8Value { get; set; }
@@ -449,8 +452,11 @@ public sealed class FancyEnumMemberSetItemAttribute : Attribute
     /// <summary>String properties only: also generate <c>TryParseFrom_{Name}</c>.</summary>
     public bool ParseFrom { get; set; }
 
-    /// <summary>Whether the <c>TryParseFrom_{Name}</c> overload without an <c>ignoreCase</c> parameter is case-sensitive. Default: <see langword="true"/>.</summary>
-    public bool ParseCaseSensitive { get; set; } = true;
+    /// <summary>
+    /// Whether the <c>TryParseFrom_{Name}</c> overload without an <c>ignoreCase</c> parameter is case-sensitive. When not
+    /// set, inherits the using enum's <see cref="FancyEnumAttribute.ParseCaseSensitive"/>.
+    /// </summary>
+    public bool ParseCaseSensitive { get; set; }
 
     /// <summary>String properties only: also generate <c>TryFormat_{Name}</c> and <c>{Name}_LongestCharLength</c>.</summary>
     public bool CreateTryFormat { get; set; }

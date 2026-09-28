@@ -91,6 +91,15 @@ public class FieldMappingTests
     }
 
     [Fact]
+    public void FieldParsersInheritTheEnumsCaseSensitivity()
+    {
+        Assert.True(InheritsCase.TryParseFrom_Code("AB", out _)); // inherits ParseCaseSensitive = false
+        Assert.True(InheritsCase.TryParseFrom_Tag("TG", out _)); // a member-set field inherits too
+        Assert.False(InheritsCase.TryParseFrom_StrictCode("XY", out _)); // sets its own
+        Assert.True(InheritsCase.TryParseFrom_StrictCode("xy", out _));
+    }
+
+    [Fact]
     public void ParseFromFieldIncludesNotDefinedFallbacks()
     {
         Assert.True(Beverage.TryParseFrom_Slug("COFFEE", out var coffee)); // this field is case-insensitive

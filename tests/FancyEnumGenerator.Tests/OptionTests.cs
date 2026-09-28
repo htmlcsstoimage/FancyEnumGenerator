@@ -79,6 +79,19 @@ public class OptionTests
     }
 
     [Fact]
+    public void FieldParsersInheritAssemblyWideCaseSensitivity()
+    {
+        var run = GeneratorHarness.Run(Usings + """
+            [assembly: FancyEnumDefaults(ParseCaseSensitive = false)]
+            [FancyEnum, FancyEnumMemberMappingSettings("F", ParseFrom = true), FancyEnumMemberMappingSettings("G", ParseFrom = true, ParseCaseSensitive = true)]
+            public enum E { Unknown, [FancyEnumMember("F", "f1"), FancyEnumMember("G", "g1")] A, [FancyEnumMember("F", "f2"), FancyEnumMember("G", "g2")] B }
+            """);
+        var source = run.GeneratedSource("E.FancyEnum.g.cs");
+        Assert.Contains("thisEnum.TryParseFrom_F(input, true, out result)", source); // default overload ignores case
+        Assert.Contains("thisEnum.TryParseFrom_G(input, false, out result)", source);
+    }
+
+    [Fact]
     public void IsValidPrefixIsOptInAndIndependentOfByteParsing()
     {
         var byteParsingOnly = GeneratorHarness.Run(Usings + "[FancyEnum(CreateByteParsing = true)] public enum E { Unknown, A, B }");

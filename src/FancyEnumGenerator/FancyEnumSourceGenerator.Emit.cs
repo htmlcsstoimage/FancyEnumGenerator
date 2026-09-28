@@ -1006,7 +1006,7 @@ public sealed partial class FancyEnumSourceGenerator
             return;
         }
 
-        AppendParserOverloads(writer, model, parserMembers, $"TryParseFrom_{settings.FieldName.ToSafeCSharpIdentifier()}", settings.FieldName, $"a member's <c>{XmlDoc(settings.FieldName)}</c> value", settings.ParseCaseSensitive, diagnostics, classMembers);
+        AppendParserOverloads(writer, model, parserMembers, $"TryParseFrom_{settings.FieldName.ToSafeCSharpIdentifier()}", settings.FieldName, $"a member's <c>{XmlDoc(settings.FieldName)}</c> value", settings.ParseCaseSensitive ?? model.ParseCaseSensitive, diagnostics, classMembers);
     }
 
     private static void AppendParserOverloads(CodeWriter.BracedWriter writer, EnumModel model, IEnumerable<(EnumMemberModel Member, string Token)> parserMembers, string methodName, string parserSource, string acceptsDoc, bool caseSensitive, List<DiagnosticInfo> diagnostics, List<Action<CodeWriter.BracedWriter>> classMembers, bool includeBytePrefixParser = false)

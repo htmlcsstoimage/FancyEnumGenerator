@@ -58,7 +58,8 @@ internal sealed record MappingSettingsModel
     public bool CreateTryFormat { get; init; }
     public bool IncludeUtf8Value { get; init; }
     public bool ParseFrom { get; init; }
-    public bool ParseCaseSensitive { get; init; } = true;
+    /// <summary>Explicitly set for this field, or null to inherit the enum's resolved <see cref="EnumModel.ParseCaseSensitive"/>.</summary>
+    public bool? ParseCaseSensitive { get; init; }
 }
 
 /// <summary>

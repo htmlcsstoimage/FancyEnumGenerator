@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      Smoke test of the packed .nupkg, consumed exactly as a user would: a PackageReference restored from artifacts/,
+      not a project reference. Built with the strictest settings a consumer might use (warnings as errors, XML docs
+      required, no implicit usings), so anything leaking out of the generated code fails the build. Runs on
+      .NET 10 everywhere, and on .NET Framework 4.8 on Windows, which is the only place the generator's downlevel code
+      paths (no inline arrays, no string.Create, no vectorized upper-casing, ...) actually execute.
+
+      Not part of the solution: it needs `dotnet pack src/FancyEnumGenerator -c Release` to have produced
+      artifacts/FancyEnumGenerator.*.nupkg first; then run this project for net10.0 (see .github/workflows/ci.yml).
+      Packages restore into obj/packages rather than the global cache, so a re-pack of the same version is picked up
+      once this project's obj/ folder is deleted.
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <!-- Cleared: Directory.Build.props sets a single TargetFramework, which would override the list below. -->
+        <TargetFramework></TargetFramework>
+        <TargetFrameworks>net10.0;net48</TargetFrameworks>
+        <IsPackable>false</IsPackable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <RestoreAdditionalProjectSources>$(MSBuildThisFileDirectory)../../artifacts</RestoreAdditionalProjectSources>
+        <RestorePackagesPath>$(MSBuildThisFileDirectory)obj/packages</RestorePackagesPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FancyEnumGenerator" Version="$(Version)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+        <PackageReference Include="System.Memory" Version="4.6.3" />
+    </ItemGroup>
+
+</Project>

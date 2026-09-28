@@ -1,0 +1,152 @@
+name: CI
+
+# Pushes to main (and v* tags) run release.yml instead, which calls this workflow as its build gate, so every
+# release has passed exactly these checks.
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      regenerate-examples:
+        description: "Regenerate the examples' generated code and commit it to this branch (repo admins only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# A newer push to a PR supersedes the older run. Never cancel anything else: when release.yml calls this workflow,
+# cancelling could interrupt a release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build and test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # The SDK version comes from global.json, so CI builds with exactly what local builds use.
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # Clear the examples' checked-in generated code so the build regenerates all of it from scratch: otherwise an
+      # example enum that was removed would leave its stale output behind, unnoticed by the check below.
+      - name: Clear generated examples
+        shell: bash
+        run: rm -rf examples/FancyEnumGenerator.Examples/Generated
+
+      # Library, tests, examples and benchmarks (built, not run).
+      - name: Build
+        run: dotnet build FancyEnumGenerator.slnx -c Release
+
+      - name: Test
+        run: dotnet test -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack src/FancyEnumGenerator -c Release --no-build
+
+      # Consumes the .nupkg just packed, as a user would, with warnings as errors and XML docs required.
+      - name: Package smoke test (.NET 10)
+        run: dotnet run --project tests/FancyEnumGenerator.PackageTests -c Release -f net10.0
+
+      # The only place the generator's downlevel code paths actually execute.
+      - name: Package smoke test (.NET Framework 4.8)
+        if: runner.os == 'Windows'
+        run: dotnet run --project tests/FancyEnumGenerator.PackageTests -c Release -f net48
+
+      # The examples' generated code is checked in as documentation, and building rewrote it. Anything reaching main
+      # (or a release) must already be up to date, so a difference fails here. Pull requests from this repository
+      # skip this, as do manual runs asking to regenerate: the regenerate-examples job commits the new output instead.
+      # Fork PRs can't be pushed to, so they still fail. (Linux only: Windows checkouts use CRLF.)
+      - name: Checked-in generated examples are up to date
+        if: >-
+          runner.os == 'Linux' &&
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository) &&
+          !(github.event_name == 'workflow_dispatch' && inputs.regenerate-examples)
+        # `git status --porcelain` lists modified, deleted and new files alike, without touching the index. (Staging
+        # tricks like `git add --intent-to-add` also stage deletions, which then hide from `git diff`.)
+        run: |
+          changes=$(git status --porcelain -- examples/FancyEnumGenerator.Examples/Generated)
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "::error::The examples' generated code is out of date. Run 'dotnet build examples/FancyEnumGenerator.Examples --no-incremental' and commit examples/FancyEnumGenerator.Examples/Generated."
+            exit 1
+          fi
+
+      - name: Upload package
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+          if-no-files-found: error
+
+  # Rebuild the examples and commit their generated code if it changed, so contributors don't have to remember to:
+  #   - automatically, on a pull request from this repository (to the PR branch);
+  #   - on demand, via "Run workflow" with regenerate-examples ticked, by a repository admin (to the branch it's run on).
+  #
+  # Pushes made with the default GITHUB_TOKEN don't trigger another workflow run (GitHub's loop protection), so the
+  # bot's commit won't get its own checks. That's fine: it only touches Generated/, exactly as this run produced it.
+  # If branch protection requires status checks, add a PAT or GitHub App token as the GENERATED_CODE_PUSH_TOKEN
+  # secret: pushes with it do trigger CI, and that run finds nothing left to regenerate, so it can't loop.
+  regenerate-examples:
+    name: Regenerate example output
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && inputs.regenerate-examples)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # Anyone with write access can start a manual run; only admins may use it to push commits.
+      - name: Require a repository admin for manual runs
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          permission=$(gh api "repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission" --jq .permission)
+          if [ "$permission" != "admin" ]; then
+            echo "::error::Only repository admins can regenerate examples from a manual run (${{ github.actor }} has '$permission')."
+            exit 1
+          fi
+
+      # The PR branch itself (not the merge commit the build job tests), or the branch a manual run was started on.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GENERATED_CODE_PUSH_TOKEN || github.token }}
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Build examples
+        run: |
+          rm -rf examples/FancyEnumGenerator.Examples/Generated
+          dotnet build examples/FancyEnumGenerator.Examples -c Release
+
+      - name: Commit regenerated output
+        run: |
+          git add --all examples/FancyEnumGenerator.Examples/Generated
+          if git diff --cached --quiet; then
+            echo "Generated examples are already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Regenerate examples' generated code"
+          git push

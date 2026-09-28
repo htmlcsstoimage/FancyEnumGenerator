@@ -113,7 +113,7 @@ public enum Permission
 }
 ```
 
-`Permission.ReadWrite.HasFlagFancy(Permission.Read)`, `ListFlagMembers` (decomposes a value into its atomic flags, .NET 8+), and `ToStringFancy(separator: '|')` all work out of the box. `[FancyEnumMemberSettings(ExcludeFromValues = true)]` keeps a composite value like `All` out of `Values`/`AsSpan` and out of the "not a single bit" warning — use it on any combined/derived value.
+`(Permission.Read | Permission.Write).HasFlagFancy(Permission.Read)`, `ListFlagMembers` (decomposes a value into its atomic flags, .NET 8+), and `ToStringFancy(separator: '|')` all work out of the box. `[FancyEnumMemberSettings(ExcludeFromValues = true)]` keeps a composite value like `All` out of `Values`/`AsSpan` and out of the "not a single bit" warning — use it on any combined/derived value.
 
 ### Obsolete members
 
@@ -134,8 +134,8 @@ Members marked `[Obsolete]` are **excluded from generation by default**. Opt a s
 | `DefaultToStringCustomField` | `null` | The field name `CustomFieldRequired`/`CustomFieldFallback` reads from. |
 | `CreateTryFormat` | `false` | Generate `TryFormat(Span<char>, out int)` for the default ToString value. |
 | `CreateByteParsing` | `false` | Generate UTF-8 `ReadOnlySpan<byte>` overloads of `TryParseFancy`/`ParseOr*`. |
-| `CreateIsValidPrefix` | `false` | Generate `IsValidPrefixFancy`, for streaming decoders that need to know early whether the bytes read so far could still be a member name. Niche; see [docs/is-valid-prefix.md](docs/is-valid-prefix.md). |
-| `ParseCaseSensitive` | `true` | Case sensitivity for `TryParseFancy` against member names. |
+| `CreateIsValidPrefix` | `false` | Generate `IsValidPrefixFancy`, for streaming decoders that need to know early whether the bytes read so far could still be a member name. Niche; see [docs/is-valid-prefix.md](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/is-valid-prefix.md). |
+| `ParseCaseSensitive` | `true` | Case sensitivity for `TryParseFancy` against member names, and for any field parser (`TryParseFrom_*`) that doesn't set its own `ParseCaseSensitive`. |
 
 ### Assembly-wide: `[assembly: FancyEnumDefaults(...)]`
 
@@ -175,12 +175,12 @@ By default, generated files use the `.g.cs` suffix (e.g. `Fruit.FancyEnum.g.cs`)
 
 ## Advanced
 
-Deeper dives live in [`docs/`](docs):
+Deeper dives live in [`docs/`](https://github.com/htmlcsstoimage/FancyEnumGenerator/tree/main/docs):
 
-- [How it works](docs/how-it-works.md): how the parsers pick a strategy (and the measurements behind each choice),
+- [How it works](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/how-it-works.md): how the parsers pick a strategy (and the measurements behind each choice),
   what the rest of the generated code does, and how the generator stays incremental.
-- [`IsValidPrefixFancy`](docs/is-valid-prefix.md): rejecting unknown names mid-stream, with a form-decoding example.
-- [Benchmarks](docs/benchmarks.md): full results against the BCL, NetEscapades.EnumGenerators and Enums.NET.
+- [`IsValidPrefixFancy`](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/is-valid-prefix.md): rejecting unknown names mid-stream, with a form-decoding example.
+- [Benchmarks](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/benchmarks.md): full results against the BCL, NetEscapades.EnumGenerators and Enums.NET.
 
 ### `FancyEnumMemberSet` — bundle several fields into one attribute
 
@@ -298,11 +298,11 @@ references a static readonly field or parameterless static method instead of a l
 
 ## Examples
 
-The [examples](examples/FancyEnumGenerator.Examples) project has runnable, checked-in before/after: hand-written enums next to the exact code the generator produces for them (under [`examples/FancyEnumGenerator.Examples/Generated/`](examples/FancyEnumGenerator.Examples/Generated)), covering every feature above. [`LargeEnum.cs`](examples/FancyEnumGenerator.Examples/LargeEnum.cs) is a 90-member `HttpHeader` enum, parsed case-insensitively from text or UTF-8, if you want to see what the generated code looks like at scale.
+The [examples](https://github.com/htmlcsstoimage/FancyEnumGenerator/tree/main/examples/FancyEnumGenerator.Examples) project has runnable, checked-in before/after: hand-written enums next to the exact code the generator produces for them (under [`examples/FancyEnumGenerator.Examples/Generated/`](https://github.com/htmlcsstoimage/FancyEnumGenerator/tree/main/examples/FancyEnumGenerator.Examples/Generated)), covering every feature above. [`LargeEnum.cs`](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/examples/FancyEnumGenerator.Examples/LargeEnum.cs) is a 90-member `HttpHeader` enum, parsed case-insensitively from text or UTF-8, if you want to see what the generated code looks like at scale.
 
 ## Performance
 
-A few highlights. Full results, and which libraries each row compares, are in [docs/benchmarks.md](docs/benchmarks.md).
+A few highlights. Full results, and which libraries each row compares, are in [docs/benchmarks.md](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/benchmarks.md).
 Measured with a BenchmarkDotNet ShortRun on .NET 10 (Apple M1 Max).
 
 | | BCL | FancyEnum | NetEscapades | Enums.NET |
@@ -335,4 +335,4 @@ Nothing here allocates except where noted.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/LICENSE).

@@ -194,7 +194,7 @@ public sealed partial class FancyEnumSourceGenerator : IIncrementalGenerator
                     CreateTryFormat = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute<int>.CreateTryFormat)),
                     IncludeUtf8Value = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute<int>.IncludeUtf8Value)),
                     ParseFrom = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute<int>.ParseFrom)),
-                    ParseCaseSensitive = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute<int>.ParseCaseSensitive), true)
+                    ParseCaseSensitive = ReadOptionalBool(attribute, nameof(FancyEnumMemberMappingSettingsAttribute<int>.ParseCaseSensitive))
                 });
             }
             else
@@ -210,7 +210,7 @@ public sealed partial class FancyEnumSourceGenerator : IIncrementalGenerator
                     ReturnNullOnNotMatched = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute.ReturnNullOnNotMatched)),
                     ThrowOnNotMatched = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute.ThrowOnNotMatched)),
                     ParseFrom = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute.ParseFrom)),
-                    ParseCaseSensitive = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute.ParseCaseSensitive), true),
+                    ParseCaseSensitive = ReadOptionalBool(attribute, nameof(FancyEnumMemberMappingSettingsAttribute.ParseCaseSensitive)),
                     CreateTryFormat = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute.CreateTryFormat)),
                     IncludeUtf8Value = attribute.TryReadNamedBool(nameof(FancyEnumMemberMappingSettingsAttribute.IncludeUtf8Value))
                 });
@@ -453,6 +453,10 @@ public sealed partial class FancyEnumSourceGenerator : IIncrementalGenerator
         }
         return hardcodedFallback;
     }
+
+    /// <summary>A bool named argument if it was written explicitly, else <see langword="null"/> (so the caller can inherit a default).</summary>
+    private static bool? ReadOptionalBool(AttributeData? attribute, string propertyName) =>
+        attribute.TryReadNamedBool(propertyName, out bool? value) ? value : null;
 
     /// <summary>Same precedence as <see cref="ResolveBoolOption"/>, for enum-valued options.</summary>
     private static TEnum ResolveEnumOption<TEnum>(AttributeData? perEnumAttribute, AttributeData? assemblyDefaults, AnalyzerConfigOptions globalOptions, string propertyName, TEnum hardcodedFallback)

@@ -9,4 +9,17 @@
         <Version>0.1.0</Version>
     </PropertyGroup>
 
+    <!--
+      Debuggability of the published package. SourceLink is built into the .NET SDK, so PDBs point at the exact
+      GitHub commit; PDBs are embedded in the DLLs rather than shipped as a .snupkg, because this package places its
+      DLLs by hand (analyzers/ and lib/, see src/FancyEnumGenerator/FancyEnumGenerator.csproj) and symbol packages
+      only cover the normal build output. On CI, ContinuousIntegrationBuild also normalizes the paths baked into the
+      output, so builds are reproducible.
+    -->
+    <PropertyGroup>
+        <DebugType>embedded</DebugType>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
 </Project>

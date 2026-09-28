@@ -77,7 +77,7 @@ public sealed partial class FancyEnumSourceGenerator
                     ReturnNullOnNotMatched = item.TryReadNamedBool(nameof(FancyEnumMemberSetItemAttribute.ReturnNullOnNotMatched)),
                     ThrowOnNotMatched = item.TryReadNamedBool(nameof(FancyEnumMemberSetItemAttribute.ThrowOnNotMatched)),
                     ParseFrom = item.TryReadNamedBool(nameof(FancyEnumMemberSetItemAttribute.ParseFrom)),
-                    ParseCaseSensitive = item.TryReadNamedBool(nameof(FancyEnumMemberSetItemAttribute.ParseCaseSensitive), true),
+                    ParseCaseSensitive = ReadOptionalBool(item, nameof(FancyEnumMemberSetItemAttribute.ParseCaseSensitive)),
                     CreateTryFormat = item.TryReadNamedBool(nameof(FancyEnumMemberSetItemAttribute.CreateTryFormat)),
                     IncludeUtf8Value = item.TryReadNamedBool(nameof(FancyEnumMemberSetItemAttribute.IncludeUtf8Value))
                 }
