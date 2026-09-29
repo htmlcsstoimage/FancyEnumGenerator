@@ -25,6 +25,7 @@
     <Project Path="examples/FancyEnumGenerator.Examples/FancyEnumGenerator.Examples.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
+    <File Path="benchmarks/combine_results.cs" />
     <File Path="benchmarks\generate_subjects.cs" />
     <Project Path="benchmarks/FancyEnumGenerator.Benchmarks/FancyEnumGenerator.Benchmarks.csproj" />
   </Folder>

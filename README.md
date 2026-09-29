@@ -4,8 +4,16 @@ A Roslyn incremental source generator that turns a plain C# enum into a fast, al
 
 ## Why
 
-- No runtime reflection, no `Enum.GetValues`/`Enum.Parse` boxing — generated `ToStringFancy`/`TryParseFancy` are plain `switch` expressions over the underlying primitive.
-- Per-member metadata (a display label, a database column value, a UI icon, ...) declared right on the enum member as attributes, with all the enum-to-metadata plumbing generated for you.
+- **Less boilerplate.** No more hand-written `switch` statements that map each member to a label, a database value
+  or an icon, and a second one that maps it back, all kept in sync by hand. Declare the value on the member as an
+  attribute and the generator writes both directions. Add a member and there's no `case` to forget.
+- **Fast.** Generated `ToStringFancy`/`TryParseFancy` are plain `switch` expressions over the underlying primitive, with
+  no reflection and no boxing. In the [benchmarks](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/benchmarks.md) on .NET 10:
+  - Parsing a name takes 3.6 ns against `Enum.Parse`'s 46 ns on a 25-member enum, and 7.5 ns against 264 ns on a
+    200-member one. A miss costs the same as a hit.
+  - `ToStringFancy()` returns a string literal: under 1 ns and nothing allocated, where `ToString()` takes 6.9 ns and 24 B.
+  - Parsing from a `[Description]` takes 2.8 ns, against 6.1 µs and 3.4 KB for the usual reflection.
+  - Nothing is built at runtime by default: no static caches and no first-call cost ([Footprint](#footprint)).
 - Works with public and internal enums, nested types, `[Flags]` enums, and any underlying numeric type.
 
 ## Installation
@@ -302,17 +310,17 @@ The [examples](https://github.com/htmlcsstoimage/FancyEnumGenerator/tree/main/ex
 
 ## Performance
 
-A few highlights. Full results, and which libraries each row compares, are in [docs/benchmarks.md](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/benchmarks.md).
-Measured with a BenchmarkDotNet ShortRun on .NET 10 (Apple M1 Max).
+A few highlights, from a full-precision BenchmarkDotNet run on .NET 10 (Apple M1 Max). The complete, unedited reports,
+and which libraries each one compares, are in [docs/benchmarks.md](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/benchmarks.md).
 
 | | BCL | FancyEnum | NetEscapades | Enums.NET |
 |---|--:|--:|--:|--:|
-| `ToString` | 7.9 ns, 24 B | <1 ns | <1 ns | <1 ns |
-| Parse, hit (25 members) | 45.3 ns | 3.9 ns | 37.2 ns | 11.3 ns |
-| Parse, hit (200 members) | 275.4 ns | 8.0 ns | 228.3 ns | 14.3 ns |
-| Parse, miss (200 members) | 488.0 ns | 8.5 ns | 413.3 ns | 13.5 ns |
-| Parse, ignoring case | 56.8 ns | 8.4 ns | 50.3 ns | 19.0 ns |
-| Parse from `[Description]` | 6.1 µs, 3.4 KB (reflection) | 3.2 ns | | |
+| `ToString` | 6.9 ns, 24 B | <1 ns | <1 ns | <1 ns |
+| Parse, hit (25 members) | 46.0 ns | 3.6 ns | 36.3 ns | 14.9 ns |
+| Parse, hit (200 members) | 263.7 ns | 7.5 ns | 227.4 ns | 14.2 ns |
+| Parse, miss (200 members) | 485.5 ns | 7.3 ns | 351.3 ns | 13.1 ns |
+| Parse, ignoring case | 56.6 ns | 8.4 ns | 47.5 ns | 17.1 ns |
+| Parse from `[Description]` | 6.1 µs, 3.4 KB (reflection) | 2.8 ns | | |
 
 Nothing here allocates except where noted.
 
