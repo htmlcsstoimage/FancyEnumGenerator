@@ -34,8 +34,6 @@ public static partial class GadgetFancyEnumExtensions {
 		public static int Length => GadgetFancyEnumExtensions.Length;
 		/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
 		public static int LongestCharLength => GadgetFancyEnumExtensions.LongestCharLength;
-		/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
-		public static int FirstNonUnknownOrdinal => GadgetFancyEnumExtensions.FirstNonUnknownOrdinal;
 		/// <summary>The lowest-valued member.</summary>
 		public static global::Gadget FirstNonUnknown => GadgetFancyEnumExtensions.FirstNonUnknown;
 		/// <summary>Converts a numeric value to the enum, returning <see langword="default"/> if it isn't a declared member. Unlike a cast, the result is always a declared member.</summary>
@@ -98,8 +96,6 @@ public static partial class GadgetFancyEnumExtensions {
 	public const int Length = 2;
 	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int LongestCharLength = 8;
-	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
-	public const int FirstNonUnknownOrdinal = (int)1;
 	/// <summary>The lowest-valued member. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const global::Gadget FirstNonUnknown = thisEnum.Sprocket;
 }

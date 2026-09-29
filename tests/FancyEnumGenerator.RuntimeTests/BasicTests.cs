@@ -98,7 +98,6 @@ public class BasicTests
         Assert.Equal(4, Fruit.Length);
         Assert.Equal("Unknown".Length, Fruit.LongestCharLength); // Unknown formats too
         Assert.Equal(Fruit.Apple, Fruit.FirstNonUnknown);
-        Assert.Equal(1, Fruit.FirstNonUnknownOrdinal);
     }
 
     [Fact]

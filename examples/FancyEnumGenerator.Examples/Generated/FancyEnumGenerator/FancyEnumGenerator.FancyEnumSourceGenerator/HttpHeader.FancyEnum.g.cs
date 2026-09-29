@@ -315,8 +315,6 @@ public static partial class HttpHeaderFancyEnumExtensions {
 		public static int Length => HttpHeaderFancyEnumExtensions.Length;
 		/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
 		public static int LongestCharLength => HttpHeaderFancyEnumExtensions.LongestCharLength;
-		/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
-		public static int FirstNonUnknownOrdinal => HttpHeaderFancyEnumExtensions.FirstNonUnknownOrdinal;
 		/// <summary>The lowest-valued member other than <c>Unknown</c>.</summary>
 		public static global::HttpHeader FirstNonUnknown => HttpHeaderFancyEnumExtensions.FirstNonUnknown;
 		/// <summary>Converts a numeric value to the enum, returning <c>Unknown</c> if it isn't a declared member. Unlike a cast, the result is always a declared member.</summary>
@@ -2908,8 +2906,6 @@ public static partial class HttpHeaderFancyEnumExtensions {
 	public const int Length = 90;
 	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int LongestCharLength = 35;
-	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
-	public const int FirstNonUnknownOrdinal = (int)1;
 	/// <summary>The lowest-valued member other than <c>Unknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const global::HttpHeader FirstNonUnknown = thisEnum.Accept;
 }

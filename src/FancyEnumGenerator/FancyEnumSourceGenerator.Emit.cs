@@ -34,7 +34,6 @@ public sealed partial class FancyEnumSourceGenerator
         var nonUnknownMembersAreContiguous = AreContiguous(nonUnknownMembers);
         var arrayMembers = nonUnknownMembers.Where(static member => !member.ExcludeFromValues).ToArray();
         var firstNonUnknownExpression = nonUnknownMembers.Length > 0 ? $"{EnumTypeAlias}.{nonUnknownMembers[0].Name}" : "default";
-        var firstNonUnknownOrdinal = nonUnknownMembers.Length > 0 ? nonUnknownMembers[0].NumericValue : 0;
         var unknownExpression = hasUnknown ? $"{EnumTypeAlias}.{unknownMember!.Name}" : "default";
         var fields = model.MappingSettings.Select(static setting => setting.FieldName)
             .Concat(model.Members.SelectMany(static member => member.Mappings).Select(static mapping => mapping.FieldName))
@@ -60,7 +59,6 @@ public sealed partial class FancyEnumSourceGenerator
         var longestCharLengthDoc = model.IsFlags
             ? "The length of the longest string <c>ToStringFancy()</c> can return (every flag set, with a one-character separator): a safe <c>TryFormat</c> buffer size."
             : "The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.";
-        var firstNonUnknownOrdinalDoc = "The underlying numeric value of <c>FirstNonUnknown</c>.";
         var firstNonUnknownDoc = hasUnknown
             ? $"The lowest-valued member other than <c>{unknownMember!.Name}</c>."
             : "The lowest-valued member.";
@@ -188,8 +186,6 @@ public sealed partial class FancyEnumSourceGenerator
                 staticExtension.AppendLine($"public static int Length => {metadataType}.Length;");
                 AppendDoc(staticExtension, longestCharLengthDoc);
                 staticExtension.AppendLine($"public static int LongestCharLength => {metadataType}.LongestCharLength;");
-                AppendDoc(staticExtension, firstNonUnknownOrdinalDoc);
-                staticExtension.AppendLine($"public static {model.UnderlyingType} FirstNonUnknownOrdinal => {metadataType}.FirstNonUnknownOrdinal;");
                 foreach (var fieldFormatLength in fieldFormatLengths)
                 {
                     AppendDoc(staticExtension, FieldLongestCharLengthDoc(fieldFormatLength.Name));
@@ -335,8 +331,6 @@ public sealed partial class FancyEnumSourceGenerator
             classWriter.AppendLine($"public const int Length = {members.Length};");
             AppendDoc(classWriter, $"{longestCharLengthDoc} {ConstantDocSuffix}");
             classWriter.AppendLine($"public const int LongestCharLength = {longestCharLength};");
-            AppendDoc(classWriter, $"{firstNonUnknownOrdinalDoc} {ConstantDocSuffix}");
-            classWriter.AppendLine($"public const {model.UnderlyingType} FirstNonUnknownOrdinal = ({model.UnderlyingType}){firstNonUnknownOrdinal.ToString(CultureInfo.InvariantCulture)};");
             foreach (var fieldFormatLength in fieldFormatLengths)
             {
                 AppendDoc(classWriter, $"{FieldLongestCharLengthDoc(fieldFormatLength.Name)} {ConstantDocSuffix}");
@@ -383,7 +377,7 @@ public sealed partial class FancyEnumSourceGenerator
         ["AsUnderlying"] = "FancyEnum", ["HasFlagFancy"] = "FancyEnum", ["ListFlagMembers"] = "FancyEnum",
         ["ToStringFancy"] = "FancyEnum", ["DirectToStringFancy"] = "FancyEnum", ["TryFormat"] = "FancyEnum",
         ["IsUnknown"] = "FancyEnum", ["IsUnknownAndNotCombined"] = "FancyEnum", ["ValueOrDefaultIfUnknown"] = "FancyEnum", ["AsUnderlyingNonUnknown"] = "FancyEnum",
-        ["Length"] = "FancyEnum", ["LongestCharLength"] = "FancyEnum", ["FirstNonUnknownOrdinal"] = "FancyEnum",
+        ["Length"] = "FancyEnum", ["LongestCharLength"] = "FancyEnum",
         ["FirstNonUnknown"] = "FancyEnum", ["FromUnderlying"] = "FancyEnum", ["FromUnderlyingNonUnknown"] = "FancyEnum",
         ["TryParseFancy"] = "FancyEnum", ["IsValidPrefixFancy"] = "FancyEnum", ["ParseOrUnknown"] = "FancyEnum",
         ["ParseOrDefault"] = "FancyEnum", ["Values"] = "FancyEnum", ["AsSpan"] = "FancyEnum",
