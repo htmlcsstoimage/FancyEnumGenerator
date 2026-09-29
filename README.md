@@ -1,5 +1,7 @@
 # FancyEnumGenerator
 
+[![NuGet Version](https://img.shields.io/nuget/v/FancyEnumGenerator)](https://www.nuget.org/packages/FancyEnumGenerator)
+
 A Roslyn incremental source generator that turns a plain C# enum into a fast, allocation-conscious set of extension members — `ToString`, `Parse`/`TryParse`, flags handling, and arbitrary per-member field mappings — computed entirely at compile time.
 
 ## Why
@@ -341,6 +343,10 @@ Nothing here allocates except where noted.
 
 - The parser's approach, which switches on input length and then compares ASCII tokens packed into `ulong` constants (with upper-cased constants for case-insensitive matching), is inspired by [StackExchange.Redis's `AsciiHash`](https://github.com/StackExchange/StackExchange.Redis/blob/main/eng/StackExchange.Redis.Build/AsciiHash.md).
 - [NetEscapades.EnumGenerators](https://github.com/andrewlock/NetEscapades.EnumGenerators) by Andrew Lock was the inspiration for generating fast enum helpers with a source generator in the first place, and is well worth a look.
+
+## About
+
+FancyEnumGenerator is built and maintained by [HTML/CSS to Image](https://htmlcsstoimage.com), an API for turning HTML/CSS or a URL into an image. We use it for the 150-plus enums across our own codebase. For the story behind it, and how the parsers got fast, see [the blog post](https://htmlcsstoimage.com/blog/fancy-enum-generator).
 
 ## License
 
