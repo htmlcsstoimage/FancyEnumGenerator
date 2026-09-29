@@ -20,7 +20,7 @@ Check(Fruit.TryParseFancy("Banana", out var banana) && banana == Fruit.Banana, "
 Check(!Fruit.TryParseFancy("banana", out _), "case-sensitive by default");
 Check(Fruit.ParseOrUnknown("nope") == Fruit.Unknown, "ParseOrUnknown");
 Check(((Fruit)99).IsUnknown && Fruit.FromUnderlying(99) == Fruit.Unknown, "undeclared values");
-Check(FruitExtensions.FirstNonUnknown == Fruit.Apple, "FirstNonUnknown const");
+Check(FruitFancyEnumExtensions.FirstNonUnknown == Fruit.Apple, "FirstNonUnknown const");
 
 // Flags: a combination that isn't a declared member (downlevel: the stack-buffer path, not string.Create).
 var readExecute = Permission.Read | Permission.Execute;

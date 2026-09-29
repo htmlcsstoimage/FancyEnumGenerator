@@ -15,8 +15,8 @@ public struct WidgetArray {
 	private global::Widget _element0;
 }
 #endif
-/// <summary>FancyEnum-generated extension members for <see cref="global::Widget"/>.</summary>
-public static class WidgetFancyEnumExtensions {
+/// <summary>FancyEnum-generated extension members, and compile-time constants, for <see cref="global::Widget"/>.</summary>
+public static partial class WidgetFancyEnumExtensions {
 	extension(global::Widget value) {
 		/// <summary>This value as its underlying <c>int</c>.</summary>
 		public int AsUnderlying => (int)value;
@@ -50,13 +50,13 @@ public static class WidgetFancyEnumExtensions {
 	}
 	extension(global::Widget) {
 		/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).</summary>
-		public static int Length => WidgetExtensions.Length;
+		public static int Length => WidgetFancyEnumExtensions.Length;
 		/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
-		public static int LongestCharLength => WidgetExtensions.LongestCharLength;
+		public static int LongestCharLength => WidgetFancyEnumExtensions.LongestCharLength;
 		/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
-		public static int FirstNonUnknownOrdinal => WidgetExtensions.FirstNonUnknownOrdinal;
+		public static int FirstNonUnknownOrdinal => WidgetFancyEnumExtensions.FirstNonUnknownOrdinal;
 		/// <summary>The lowest-valued member other than <c>Unknown</c>.</summary>
-		public static global::Widget FirstNonUnknown => WidgetExtensions.FirstNonUnknown;
+		public static global::Widget FirstNonUnknown => WidgetFancyEnumExtensions.FirstNonUnknown;
 		/// <summary>Converts a numeric value to the enum, returning <c>Unknown</c> if it isn't a declared member. Unlike a cast, the result is always a declared member.</summary>
 		/// <param name="underlying">The numeric value to convert.</param>
 		public static global::Widget FromUnderlying(int underlying) {
@@ -163,17 +163,13 @@ public static class WidgetFancyEnumExtensions {
 		}
 		#endif
 	}
-	
-}
-/// <summary>Constants describing <see cref="global::Widget"/>, usable where a compile-time constant is required (<c>const</c> fields, attribute arguments, <c>stackalloc</c> sizes). Also exposed as static extension properties on the enum itself.</summary>
-public static partial class WidgetExtensions {
-	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).</summary>
+	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once). A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int Length = 4;
-	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
+	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int LongestCharLength = 8;
-	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
+	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int FirstNonUnknownOrdinal = (int)1;
-	/// <summary>The lowest-valued member other than <c>Unknown</c>.</summary>
+	/// <summary>The lowest-valued member other than <c>Unknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const global::Widget FirstNonUnknown = thisEnum.Sprocket;
 }
 #nullable disable

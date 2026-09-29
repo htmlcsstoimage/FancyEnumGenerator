@@ -214,6 +214,42 @@ public enum WithObsolete
     [Obsolete] Legacy,
 }
 
+/// <summary>Flags whose defined-bits mask needs care: promotion to int for byte, the sign bit, the top bit of a ulong.</summary>
+[Flags]
+[FancyEnum(AllowNoUnknown = true, CreateTryFormat = true)]
+public enum ByteFlags : byte { None = 0, Low = 1, High = 128 }
+
+[Flags]
+[FancyEnum(AllowNoUnknown = true, CreateTryFormat = true)]
+public enum SignFlags : sbyte { None = 0, Low = 1, Sign = sbyte.MinValue }
+
+[Flags]
+[FancyEnum(AllowNoUnknown = true, CreateTryFormat = true)]
+public enum WideFlags : ulong { None = 0, Low = 1, Top = 1UL << 63 }
+
+/// <summary>Flags with an Unknown member, a declared composite, and a declared member no single-bit flag covers.</summary>
+[Flags]
+[FancyEnum]
+public enum FlagsWithUnknown
+{
+    Unknown = 0,
+    A = 1,
+    B = 2,
+    C = 4,
+    [FancyEnumMemberSettings(ExcludeFromValues = true)] AB = A | B,
+    [FancyEnumMemberSettings(ExcludeFromValues = true)] Weird = 24,
+}
+
+/// <summary>An excluded obsolete member in the middle leaves a gap; that mustn't need AllowNonContiguous.</summary>
+[FancyEnum]
+public enum ObsoleteInTheMiddle
+{
+    Unknown,
+    First,
+    [Obsolete] Middle,
+    Last,
+}
+
 [FancyEnum(IncludeObsolete = true)]
 public enum KeepsObsolete
 {

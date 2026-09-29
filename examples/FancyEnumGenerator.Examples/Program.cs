@@ -43,6 +43,17 @@ Console.WriteLine($"(Read | Write).ToStringFancy(): {readWrite.ToStringFancy()}"
 Console.WriteLine($"Permission.All.ToStringFancy() (still works despite ExcludeFromValues): {Permission.All.ToStringFancy()}");
 
 Console.WriteLine();
+Console.WriteLine("--- Flags: FlagWithObsolete (LegacySearch = 2 is [Obsolete]) ---");
+var searchAndExport = FlagWithObsolete.Search | FlagWithObsolete.Export;
+var withLegacy = FlagWithObsolete.Search | (FlagWithObsolete)2; // (FlagWithObsolete)2 is LegacySearch, cast to avoid the obsolete warning
+Console.WriteLine($"(Search | Export).ToStringFancy(): {searchAndExport.ToStringFancy()}");
+Console.WriteLine($"(Search | Export).IsUnknownAndNotCombined: {searchAndExport.IsUnknownAndNotCombined}");
+Console.WriteLine($"LegacySearch.ToStringFancy() (excluded, so empty): '{((FlagWithObsolete)2).ToStringFancy()}'");
+Console.WriteLine($"FromUnderlying(2) (LegacySearch's bit is no longer a declared flag): {FlagWithObsolete.FromUnderlying(2)}");
+Console.WriteLine($"FromUnderlying(5) (Search | Export): {FlagWithObsolete.FromUnderlying(5).ToStringFancy()}");
+Console.WriteLine($"(Search | LegacySearch).IsUnknownAndNotCombined: {withLegacy.IsUnknownAndNotCombined}");
+
+Console.WriteLine();
 Console.WriteLine("--- MemberSets: Vegetable ---");
 Console.WriteLine($"Vegetable.Carrot.Label: {Vegetable.Carrot.Label}");
 Console.WriteLine($"Vegetable.Carrot.SortOrder: {Vegetable.Carrot.SortOrder}");

@@ -144,9 +144,15 @@ fields, header names), and it isn't worth a cleverer structure for such a niche 
   value returns `""`.
 - **Flags formatting**: a declared member, including a declared composite like `ReadWrite`, is a direct lookup. Any
   other combination first adds up the exact output length from its set bits, then writes it in a single
-  `string.Create` (or a stack buffer on older targets). So it allocates only the result string.
-  `LongestCharLength` is computed at compile time, so a `TryFormat` buffer of that size always fits.
-- **`FromUnderlying` / `IsUnknown`**: when the values are contiguous (the default rule), these are range checks.
+  `string.Create` (or a stack buffer on older targets), so it allocates only the result string; `TryFormat` writes the
+  same characters straight into your buffer, allocating nothing. Flags are written from the lowest bit to the highest,
+  with a signed enum's sign bit last, as `Enum.ToString()` orders them. A value with any bit that isn't a declared flag
+  formats as `""`, checked against one private constant of all the declared flags OR'd together
+  (`FancyFlagAllDefined`). `LongestCharLength` is computed at compile time, so a buffer of that size always fits.
+- **`FromUnderlying` / `IsUnknown`**: when the values are contiguous (the default rule), these are range checks. For a
+  flags enum, `FromUnderlying` first checks the value against `FancyFlagAllDefined`, so any combination of declared
+  flags is returned as is in one bit test; `IsUnknown` still accepts only declared members, and
+  `IsUnknownAndNotCombined` is its combination-aware counterpart.
   Otherwise they're a `switch` over the declared values. That's why contiguity is required by default: it enables the
   cheaper form.
 - **Field mappings**: members that map a field to the same value share one `case`. When three or more of them have

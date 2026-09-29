@@ -15,8 +15,8 @@ public struct VegetableArray {
 	private global::Vegetable _element0;
 }
 #endif
-/// <summary>FancyEnum-generated extension members for <see cref="global::Vegetable"/>.</summary>
-public static class VegetableFancyEnumExtensions {
+/// <summary>FancyEnum-generated extension members, and compile-time constants, for <see cref="global::Vegetable"/>.</summary>
+public static partial class VegetableFancyEnumExtensions {
 	extension(global::Vegetable value) {
 		/// <summary>This value as its underlying <c>int</c>.</summary>
 		public int AsUnderlying => (int)value;
@@ -49,13 +49,13 @@ public static class VegetableFancyEnumExtensions {
 	}
 	extension(global::Vegetable) {
 		/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).</summary>
-		public static int Length => VegetableExtensions.Length;
+		public static int Length => VegetableFancyEnumExtensions.Length;
 		/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
-		public static int LongestCharLength => VegetableExtensions.LongestCharLength;
+		public static int LongestCharLength => VegetableFancyEnumExtensions.LongestCharLength;
 		/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
-		public static int FirstNonUnknownOrdinal => VegetableExtensions.FirstNonUnknownOrdinal;
+		public static int FirstNonUnknownOrdinal => VegetableFancyEnumExtensions.FirstNonUnknownOrdinal;
 		/// <summary>The lowest-valued member other than <c>Unknown</c>.</summary>
-		public static global::Vegetable FirstNonUnknown => VegetableExtensions.FirstNonUnknown;
+		public static global::Vegetable FirstNonUnknown => VegetableFancyEnumExtensions.FirstNonUnknown;
 		/// <summary>Converts a numeric value to the enum, returning <c>Unknown</c> if it isn't a declared member. Unlike a cast, the result is always a declared member.</summary>
 		/// <param name="underlying">The numeric value to convert.</param>
 		public static global::Vegetable FromUnderlying(int underlying) {
@@ -115,17 +115,13 @@ public static class VegetableFancyEnumExtensions {
 		}
 		#endif
 	}
-	
-}
-/// <summary>Constants describing <see cref="global::Vegetable"/>, usable where a compile-time constant is required (<c>const</c> fields, attribute arguments, <c>stackalloc</c> sizes). Also exposed as static extension properties on the enum itself.</summary>
-public static partial class VegetableExtensions {
-	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).</summary>
+	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once). A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int Length = 3;
-	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
+	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int LongestCharLength = 7;
-	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
+	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int FirstNonUnknownOrdinal = (int)1;
-	/// <summary>The lowest-valued member other than <c>Unknown</c>.</summary>
+	/// <summary>The lowest-valued member other than <c>Unknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const global::Vegetable FirstNonUnknown = thisEnum.Carrot;
 }
 #nullable disable

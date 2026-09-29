@@ -15,8 +15,8 @@ public struct GadgetArray {
 	private global::Gadget _element0;
 }
 #endif
-/// <summary>FancyEnum-generated extension members for <see cref="global::Gadget"/>.</summary>
-public static class GadgetFancyEnumExtensions {
+/// <summary>FancyEnum-generated extension members, and compile-time constants, for <see cref="global::Gadget"/>.</summary>
+public static partial class GadgetFancyEnumExtensions {
 	extension(global::Gadget value) {
 		/// <summary>This value as its underlying <c>int</c>.</summary>
 		public int AsUnderlying => (int)value;
@@ -31,13 +31,13 @@ public static class GadgetFancyEnumExtensions {
 	}
 	extension(global::Gadget) {
 		/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).</summary>
-		public static int Length => GadgetExtensions.Length;
+		public static int Length => GadgetFancyEnumExtensions.Length;
 		/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
-		public static int LongestCharLength => GadgetExtensions.LongestCharLength;
+		public static int LongestCharLength => GadgetFancyEnumExtensions.LongestCharLength;
 		/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
-		public static int FirstNonUnknownOrdinal => GadgetExtensions.FirstNonUnknownOrdinal;
+		public static int FirstNonUnknownOrdinal => GadgetFancyEnumExtensions.FirstNonUnknownOrdinal;
 		/// <summary>The lowest-valued member.</summary>
-		public static global::Gadget FirstNonUnknown => GadgetExtensions.FirstNonUnknown;
+		public static global::Gadget FirstNonUnknown => GadgetFancyEnumExtensions.FirstNonUnknown;
 		/// <summary>Converts a numeric value to the enum, returning <see langword="default"/> if it isn't a declared member. Unlike a cast, the result is always a declared member.</summary>
 		/// <param name="underlying">The numeric value to convert.</param>
 		public static global::Gadget FromUnderlying(int underlying) {
@@ -94,17 +94,13 @@ public static class GadgetFancyEnumExtensions {
 		}
 		#endif
 	}
-	
-}
-/// <summary>Constants describing <see cref="global::Gadget"/>, usable where a compile-time constant is required (<c>const</c> fields, attribute arguments, <c>stackalloc</c> sizes). Also exposed as static extension properties on the enum itself.</summary>
-public static partial class GadgetExtensions {
-	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).</summary>
+	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once). A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int Length = 2;
-	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
+	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int LongestCharLength = 8;
-	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
+	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int FirstNonUnknownOrdinal = (int)1;
-	/// <summary>The lowest-valued member.</summary>
+	/// <summary>The lowest-valued member. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const global::Gadget FirstNonUnknown = thisEnum.Sprocket;
 }
 #nullable disable

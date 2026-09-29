@@ -331,7 +331,11 @@ public sealed partial class FancyEnumSourceGenerator : IIncrementalGenerator
         // Flag values (1, 2, 4, ...) are non-contiguous by construction, so for [Flags] enums the library default flips
         // to allowing it; an explicit setting at any level still wins.
         var allowNonContiguous = ResolveBoolOption(enumAttribute, assemblyDefaults, globalOptions, nameof(FancyEnumAttribute.AllowNonContiguous), isFlags);
-        var numericValues = members.Select(static member => member.NumericValue).Distinct().OrderBy(static value => value).ToArray();
+        // Judged on every declared value, including obsolete members that were excluded above: deprecating a member
+        // mustn't turn into a build error. The emitted code decides range check vs switch from the members it actually
+        // generates, so a gap left by an excluded member is handled there.
+        var numericValues = symbol.GetMembers().OfType<IFieldSymbol>().Where(static field => field.HasConstantValue)
+            .Select(static field => Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture)).Distinct().OrderBy(static value => value).ToArray();
         if (!allowNonContiguous && numericValues.Skip(1).Where((value, index) => value != numericValues[index] + 1).Any())
         {
             diagnostics.Add(new DiagnosticInfo(EnumGeneratorDiagnostics.NonContiguous, symbol.Locations.FirstOrDefault(), enumName));

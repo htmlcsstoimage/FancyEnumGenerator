@@ -94,7 +94,7 @@ public enum Fruit
 }
 ```
 
-Settings available per field: `NotDefined` (fallback for a member that never set this field — `Skip`/`NameOf`/`NameOfLower`/`NameOfUpper` for the non-generic string attribute, or a literal default value for the generic `<T>` one), `NotMatched` (the fallback expression used when a *runtime value* doesn't match any known member), `ReturnNullOnNotMatched` / `ThrowOnNotMatched`, `ParseFrom` (also generate `TryParseFrom_{Field}`, parsing by this field's values instead of the member name), `ParseCaseSensitive`, `CreateTryFormat`, `IncludeUtf8Value` (also generate a `ReadOnlySpan<byte>`-returning `{Field}Bytes` property, string fields only).
+Settings available per field: `NotDefined` (fallback for a member that never set this field — `Skip`/`NameOf`/`NameOfLower`/`NameOfUpper` for the non-generic string attribute, or a literal default value for the generic `<T>` one), `NotMatched` (the fallback expression used when a *runtime value* doesn't match any known member), `ReturnNullOnNotMatched` / `ThrowOnNotMatched`, `ParseFrom` (also generate `TryParseFrom_{Field}`, parsing by this field's values instead of the member name), `ParseCaseSensitive`, `CreateTryFormat`, `IncludeUtf8Value` (also generate a `ReadOnlySpan<byte>`-returning `{Field}Bytes` property, string fields only). Each is described in the [settings reference](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/settings.md#field-mapping-settings).
 
 ### Flags enums
 
@@ -115,68 +115,44 @@ public enum Permission
 
 `(Permission.Read | Permission.Write).HasFlagFancy(Permission.Read)`, `ListFlagMembers` (decomposes a value into its atomic flags, .NET 8+), and `ToStringFancy(separator: '|')` all work out of the box. `[FancyEnumMemberSettings(ExcludeFromValues = true)]` keeps a composite value like `All` out of `Values`/`AsSpan` and out of the "not a single bit" warning — use it on any combined/derived value.
 
+`IsUnknown` stays strict for flags, as for any enum: it's `true` for anything that isn't a declared member, including combinations like `Read | Write`. `IsUnknownAndNotCombined` is the flags-aware version: `false` for any combination of declared flags, and `true` only for `Unknown` itself or a value with a bit that isn't a declared flag (like `(Permission)33`). It's a single bit test. `FromUnderlying` follows the same rule for flags: `Permission.FromUnderlying(3)` returns `Read | Write`, and only a value with undeclared bits comes back as `Unknown`.
+
 ### Obsolete members
 
 Members marked `[Obsolete]` are **excluded from generation by default**. Opt a specific enum back in with `[FancyEnum(IncludeObsolete = true)]`, or flip the default for the whole assembly (see [Settings](#settings)).
 
 ## Settings
 
-### Per-enum: `[FancyEnum]`
+The settings you're most likely to change:
 
-| Property | Default | What it does |
+| Setting | Default | What it does |
 |---|---|---|
-| `AllowNoUnknown` | `false` | Skip the "must have an `Unknown = 0` member" requirement. |
-| `AllowNonContiguous` | `false` (`true` for `[Flags]` enums) | Skip the "values must be contiguous" requirement. |
-| `IncludeObsolete` | `false` | Whether `[Obsolete]`-marked members are generated at all. |
-| `NoInlineArray` | `false` | Don't generate the .NET 8+ inline-array struct. `Values`/`AsSpan` are then only generated when `CreateStaticReadonlyCollection` is also set (backed by a plain array), and flags enums lose `ListFlagMembers`. |
-| `CreateStaticReadonlyCollection` | `false` | Cache `Values` in a static field (built once, lazily, on first access) and also generate `AsSpan`. When this forces a plain-array representation (older targets, or `NoInlineArray = true`), `Values` is typed `IReadOnlyList<T>`, not `T[]`, so callers can't mutate the shared static backing storage. By default `Values` is rebuilt fresh on every access instead (cheap — a value-type copy, not a heap allocation — but with no stable backing store, so no `AsSpan`). |
-| `DefaultToStringBehavior` | `NameOf` | How `ToStringFancy()` renders a member with no explicit mapping: `NameOf`/`NameOfLower`/`NameOfUpper`; `CustomFieldRequired`/`CustomFieldFallback` (use `DefaultToStringCustomField`'s mapped value); or read a well-known attribute, falling back to the member's name when it's absent — `DescriptionAttribute` (`[Description("...")]`), `DisplayAttribute` (`[Display(Name = "...")]` — note this is `System.ComponentModel.DataAnnotations.DisplayAttribute`, *not* `DisplayNameAttribute`, which doesn't support fields and so can't be applied to an enum member at all), `EnumMemberAttribute` (`[EnumMember(Value = "...")]`), or `JsonStringEnumMemberNameAttribute` (`[JsonStringEnumMemberName("...")]`). |
-| `DefaultToStringCustomField` | `null` | The field name `CustomFieldRequired`/`CustomFieldFallback` reads from. |
-| `CreateTryFormat` | `false` | Generate `TryFormat(Span<char>, out int)` for the default ToString value. |
-| `CreateByteParsing` | `false` | Generate UTF-8 `ReadOnlySpan<byte>` overloads of `TryParseFancy`/`ParseOr*`. |
-| `CreateIsValidPrefix` | `false` | Generate `IsValidPrefixFancy`, for streaming decoders that need to know early whether the bytes read so far could still be a member name. Niche; see [docs/is-valid-prefix.md](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/is-valid-prefix.md). |
-| `ParseCaseSensitive` | `true` | Case sensitivity for `TryParseFancy` against member names, and for any field parser (`TryParseFrom_*`) that doesn't set its own `ParseCaseSensitive`. |
+| `AllowNoUnknown` | `false` | Don't require an `Unknown = 0` member. (`ParseOrDefault` then replaces `ParseOrUnknown`.) |
+| `AllowNonContiguous` | `false` (`true` for `[Flags]`) | Allow gaps between the numeric values. |
+| `ParseCaseSensitive` | `true` | Whether parsing without an `ignoreCase` argument is case-sensitive. Field parsers inherit it. |
+| `DefaultToStringBehavior` | `NameOf` | What `ToStringFancy()` returns: the name, lower- or upper-cased, a field's value, or the member's `[Description]`, `[Display]`, `[EnumMember]` or `[JsonStringEnumMemberName]`. |
+| `CreateByteParsing` | `false` | Add UTF-8 (`ReadOnlySpan<byte>`) parse overloads. |
+| `CreateTryFormat` | `false` | Add `TryFormat(Span<char>, out int)`, which formats into your own buffer. |
+| `CreateStaticReadonlyCollection` | `false` | Cache `Values` in a static field and add a zero-copy `AsSpan`. |
+| `IncludeObsolete` | `false` | Generate `[Obsolete]` members too; by default they're left out. |
 
-### Assembly-wide: `[assembly: FancyEnumDefaults(...)]`
+Each can be set in three places. For each setting, the first of these that sets it wins:
 
-Every property above (plus two more that have no per-enum equivalent) can be set once for the whole assembly:
+1. On the enum: `[FancyEnum(AllowNoUnknown = true)]`
+2. For the whole assembly: `[assembly: FancyEnumDefaults(ParseCaseSensitive = false)]`
+3. Repo-wide, as an MSBuild property named `FancyEnum` + the setting:
+   `<FancyEnumCreateByteParsing>true</FancyEnumCreateByteParsing>`
 
-```csharp
-[assembly: FancyEnumDefaults(AllowNoUnknown = true, ParseCaseSensitive = false)]
-```
-
-| Property | Default | What it does |
-|---|---|---|
-| `GenerateParseMethods` | `true` | Generate `TryParseFancy`/`ParseOr*`/`TryParseFrom_*` at all. Set `false` to drop all parsing code (codegen-size lever). |
-| `UseGeneratedFileSuffix` | `true` | Whether generated files get the `.g.cs` suffix (see below). |
-
-Precedence, highest to lowest:
-1. The specific enum's own `[FancyEnum(...)]` property, if set.
-2. `[assembly: FancyEnumDefaults(...)]`.
-3. The matching MSBuild property (see below).
-4. The library's hardcoded default (the tables above).
-
-### MSBuild properties
-
-The same settings are also available from your `.csproj` or `Directory.Build.props` — useful for a repo-wide default without touching source:
-
-```xml
-<PropertyGroup>
-  <FancyEnumAllowNoUnknown>true</FancyEnumAllowNoUnknown>
-  <FancyEnumParseCaseSensitive>false</FancyEnumParseCaseSensitive>
-</PropertyGroup>
-```
-
-Every property name is `FancyEnum` + the property name from the tables above (`FancyEnumAllowNoUnknown`, `FancyEnumIncludeObsolete`, `FancyEnumDefaultToStringBehavior`, `FancyEnumGenerateParseMethods`, `FancyEnumUseGeneratedFileSuffix`, ...) — wired up automatically the moment you reference the package, no extra setup required.
-
-### Generated file naming
-
-By default, generated files use the `.g.cs` suffix (e.g. `Fruit.FancyEnum.g.cs`) — the convention several tools (`dotnet format`, some `.gitignore`/`.editorconfig` setups) already treat as "generated, skip me." Set `UseGeneratedFileSuffix = false` (assembly attribute or MSBuild property) for plain `.cs` instead.
+**[Full settings reference](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/settings.md):** every
+setting in detail, with its effects on the generated code, interactions, and diagnostics. It also covers the rest:
+`NoInlineArray`, `CreateIsValidPrefix`, `DefaultToStringCustomField`, the assembly-only `GenerateParseMethods` and
+`UseGeneratedFileSuffix`, and the settings for field mappings, members, and member sets.
 
 ## Advanced
 
 Deeper dives live in [`docs/`](https://github.com/htmlcsstoimage/FancyEnumGenerator/tree/main/docs):
 
+- [Settings reference](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/settings.md): every setting in detail.
 - [How it works](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/how-it-works.md): how the parsers pick a strategy (and the measurements behind each choice),
   what the rest of the generated code does, and how the generator stays incremental.
 - [`IsValidPrefixFancy`](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/docs/is-valid-prefix.md): rejecting unknown names mid-stream, with a form-decoding example.
@@ -263,6 +239,30 @@ public OrderAttribute(int order) => Order = order + 1; // the generator sees the
 ```
 
 ...document that for whoever uses your shape. Constructors that do plain assignment keep the generated field matching what a reader would expect.
+
+### Adding your own members
+
+Each enum gets one generated class, `{Enum}FancyEnumExtensions`, and it's `partial`, so you can add your own members
+to it. They then sit next to the generated ones and are reachable through the same `using`, with no extra import. Put the part in the enum's namespace, with the
+same accessibility as the enum:
+
+```csharp
+public static partial class FruitFancyEnumExtensions
+{
+    extension(Fruit fruit)
+    {
+        public bool IsYellow => fruit == Fruit.Banana;
+        public string Shout => fruit.ToStringFancy().ToUpperInvariant(); // can build on the generated members
+    }
+}
+```
+
+Besides the extension members, the class holds compile-time constants (`FruitFancyEnumExtensions.Length`,
+`LongestCharLength`, ...) for where C# requires a constant, such as `const` fields, attribute arguments and `case`
+labels. They're the same values as `Fruit.Length` and friends, which as extension members can't be constants. Nothing
+is generated under the conventional `{Enum}Extensions` name, so your own `FruitExtensions` class never clashes with
+generated code. For a nested enum, the enclosing types' names are joined with `_`, as in
+`Outer_NestedFancyEnumExtensions`.
 
 ### Computed values via `StaticMethodName`/`StaticMethodSource`
 

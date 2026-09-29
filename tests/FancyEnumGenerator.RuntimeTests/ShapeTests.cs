@@ -36,13 +36,23 @@ public class ShapeTests
         Assert.True(KeepsObsolete.TryParseFancy("Older", out var older));
         Assert.Equal(KeepsObsolete.Older, older);
     }
+
+    [Fact]
+    public void ObsoleteMemberInTheMiddleLeavesAGapThatStillWorks()
+    {
+        Assert.Equal(ObsoleteInTheMiddle.Last, ObsoleteInTheMiddle.FromUnderlying(3));
+        Assert.Equal(ObsoleteInTheMiddle.Unknown, ObsoleteInTheMiddle.FromUnderlying(2)); // the excluded member's value
+        Assert.True(ObsoleteInTheMiddle.Middle.IsUnknown);
+        Assert.False(ObsoleteInTheMiddle.Last.IsUnknown);
+        Assert.Equal("Last", ObsoleteInTheMiddle.Last.ToStringFancy());
+    }
 #pragma warning restore CS0612, CS0618
 
     [Fact]
     public void NestedEnum()
     {
         Assert.Equal("Only", Outer.Nested.Only.ToStringFancy());
-        Assert.Equal(2, Outer_NestedExtensions.Length);
+        Assert.Equal(2, Outer_NestedFancyEnumExtensions.Length);
         Assert.Equal((byte)1, Outer.Nested.Only.AsUnderlying);
     }
 }

@@ -12,6 +12,11 @@ public sealed partial class FancyEnumSourceGenerator
     private const string ByteSpanAlias = "ByteSpan";
     private const string StringComparisonAlias = "StringComparison";
     private const string InlineArrayAlias = "InlineArray";
+    /// <summary>The private const holding every declared single-bit flag of a flags enum (see <see cref="HasUndefinedFlagBits"/>).</summary>
+    private const string AllDefinedFlagsName = "FancyFlagAllDefined";
+
+    /// <summary>Whether <c>value</c> has any bit that isn't one of the enum's declared flags.</summary>
+    private static string HasUndefinedFlagBits(EnumModel model) => $"(({model.UnderlyingType})value & ~{AllDefinedFlagsName}) != 0";
 
     private static GenResult Emit(EnumModel model)
     {
@@ -45,7 +50,8 @@ public sealed partial class FancyEnumSourceGenerator
         var fieldFormatLengths = new List<(string Name, int Length)>();
         var longestCharLength = 0;
         var arrayType = $"{model.GeneratedName}Array";
-        var metadataType = $"{model.GeneratedName}Extensions";
+        // The static extension properties forward to constants of the same name in this same class (see the end of it).
+        var metadataType = $"{model.GeneratedName}FancyEnumExtensions";
         var valuesInitializer = string.Join(", ", arrayMembers.Select(member => $"{EnumTypeAlias}.{member.Name}"));
         var createTargetConditionalValues = !model.NoInlineArray && arrayMembers.Length > 0;
         var usesByteSpan = model.CreateByteParsing || model.CreateIsValidPrefix || model.MappingSettings.Any(static settings => settings.IncludeUtf8Value);
@@ -93,10 +99,19 @@ public sealed partial class FancyEnumSourceGenerator
             writer.AppendLine("#endif");
         }
 
-        writer.AppendLine($"/// <summary>FancyEnum-generated extension members for {enumCref}.</summary>");
+        writer.AppendLine($"/// <summary>FancyEnum-generated extension members, and compile-time constants, for {enumCref}.</summary>");
         var classMembers = new List<Action<CodeWriter.BracedWriter>>();
-        using (var classWriter = writer.StartBraced($"{model.Accessibility} static class {model.GeneratedName}FancyEnumExtensions"))
+        // Partial, so consumers can add their own members (extension blocks included) to the same class, reachable through
+        // the same using directive as the generated ones.
+        using (var classWriter = writer.StartBraced($"{model.Accessibility} static partial class {model.GeneratedName}FancyEnumExtensions"))
         {
+            if (model.IsFlags && members.Any(member => IsSingleBit(member.NumericValue, model.UnderlyingType)))
+            {
+                // Every declared single-bit flag, OR'd together: a value with any other bit set isn't a combination of
+                // declared flags, so the flags formatters (ToStringFancy, TryFormat) render it as "".
+                var definedFlags = string.Join(" | ", members.Where(member => IsSingleBit(member.NumericValue, model.UnderlyingType)).Select(static member => $"{EnumTypeAlias}.{member.Name}"));
+                classWriter.AppendLine($"private const {model.UnderlyingType} {AllDefinedFlagsName} = ({model.UnderlyingType})({definedFlags});");
+            }
             if (model.CreateStaticReadonlyCollection && arrayMembers.Length > 0)
             {
                 // Opted into a cached, stable collection with a genuine AsSpan (below) - lazily built on first
@@ -156,6 +171,10 @@ public sealed partial class FancyEnumSourceGenerator
                     valueExtension.AppendLine($"public {model.FullyQualifiedName} ValueOrDefaultIfUnknown => value.IsUnknown ? {firstNonUnknownExpression} : value;");
                     AppendDoc(valueExtension, "<c>ValueOrDefaultIfUnknown</c> as its underlying numeric value.");
                     valueExtension.AppendLine($"public {model.UnderlyingType} AsUnderlyingNonUnknown => value.IsUnknown ? ({model.UnderlyingType}){firstNonUnknownExpression} : ({model.UnderlyingType})value;");
+                    if (model.IsFlags)
+                    {
+                        AppendIsUnknownAndNotCombined(valueExtension, model, members, unknownMember);
+                    }
                 }
                 foreach (var field in fields)
                 {
@@ -180,12 +199,19 @@ public sealed partial class FancyEnumSourceGenerator
                 staticExtension.AppendLine($"public static {model.FullyQualifiedName} FirstNonUnknown => {metadataType}.FirstNonUnknown;");
 
                 var unknownDoc = hasUnknown ? $"<c>{unknownMember!.Name}</c>" : "<see langword=\"default\"/>";
+                var flagsMaskExists = model.IsFlags && members.Any(member => IsSingleBit(member.NumericValue, model.UnderlyingType));
+                var combinationsDoc = flagsMaskExists ? " (or a combination of declared flags)" : "";
                 AppendDoc(staticExtension,
-                    $"Converts a numeric value to the enum, returning {unknownDoc} if it isn't a declared member. Unlike a cast, the result is always a declared member.",
+                    $"Converts a numeric value to the enum, returning {unknownDoc} if it isn't a declared member{combinationsDoc}. Unlike a cast, the result is always a declared member{combinationsDoc}.",
                     null,
                     ("underlying", "The numeric value to convert."));
                 using (var fromUnderlyingWriter = staticExtension.StartBraced($"public static {model.FullyQualifiedName} FromUnderlying({model.UnderlyingType} underlying)"))
                 {
+                    if (flagsMaskExists)
+                    {
+                        // A combination of declared flags (0 included) is valid as is; only other values need the lookup below.
+                        fromUnderlyingWriter.AppendSimpleIf($"(underlying & ~{AllDefinedFlagsName}) == 0", $"return ({EnumTypeAlias})underlying;");
+                    }
                     if (members.Length == 0)
                     {
                         fromUnderlyingWriter.AppendLine($"return {unknownExpression};");
@@ -208,7 +234,7 @@ public sealed partial class FancyEnumSourceGenerator
 
 
                 AppendDoc(staticExtension,
-                    "Like <c>FromUnderlying</c>, but returns <c>FirstNonUnknown</c> instead when the value isn't a declared member (or is the Unknown member).",
+                    $"Like <c>FromUnderlying</c>, but returns <c>FirstNonUnknown</c> instead when the value isn't a declared member{combinationsDoc} (or is the Unknown member).",
                     null,
                     ("underlying", "The numeric value to convert."));
                 if (!hasUnknown && members.Length > 0 && members[0].NumericValue == 0)
@@ -218,6 +244,10 @@ public sealed partial class FancyEnumSourceGenerator
                 else
                 {
                     using var fromUnderlyingNonUnknownWriter = staticExtension.StartBraced($"public static {model.FullyQualifiedName} FromUnderlyingNonUnknown({model.UnderlyingType} underlying)");
+                    if (flagsMaskExists)
+                    {
+                        fromUnderlyingNonUnknownWriter.AppendSimpleIf($"underlying != 0 && (underlying & ~{AllDefinedFlagsName}) == 0", $"return ({EnumTypeAlias})underlying;");
+                    }
                     if (nonUnknownMembers.Length == 0)
                     {
                         fromUnderlyingNonUnknownWriter.AppendLine($"return {firstNonUnknownExpression};");
@@ -295,26 +325,27 @@ public sealed partial class FancyEnumSourceGenerator
             {
                 classMember(classWriter);
             }
-        }
 
-        writer.AppendLine($"/// <summary>Constants describing {enumCref}, usable where a compile-time constant is required (<c>const</c> fields, attribute arguments, <c>stackalloc</c> sizes). Also exposed as static extension properties on the enum itself.</summary>");
-        using (var metadataWriter = writer.StartBraced($"{model.Accessibility} static partial class {metadataType}"))
-        {
-            AppendDoc(metadataWriter, lengthDoc);
-            metadataWriter.AppendLine($"public const int Length = {members.Length};");
-            AppendDoc(metadataWriter, longestCharLengthDoc);
-            metadataWriter.AppendLine($"public const int LongestCharLength = {longestCharLength};");
-            AppendDoc(metadataWriter, firstNonUnknownOrdinalDoc);
-            metadataWriter.AppendLine($"public const {model.UnderlyingType} FirstNonUnknownOrdinal = ({model.UnderlyingType}){firstNonUnknownOrdinal.ToString(CultureInfo.InvariantCulture)};");
+            // The same values as the static extension properties above (Fruit.Length, ...), as real constants, for where
+            // C# requires one: const fields, attribute arguments, case labels. Extension members can't be const, so the
+            // properties forward here. A const and an extension property may share a name in one class, so they do.
+            // Emitted last, because LongestCharLength and the per-field lengths are only known once the members above
+            // have been generated.
+            AppendDoc(classWriter, $"{lengthDoc} {ConstantDocSuffix}");
+            classWriter.AppendLine($"public const int Length = {members.Length};");
+            AppendDoc(classWriter, $"{longestCharLengthDoc} {ConstantDocSuffix}");
+            classWriter.AppendLine($"public const int LongestCharLength = {longestCharLength};");
+            AppendDoc(classWriter, $"{firstNonUnknownOrdinalDoc} {ConstantDocSuffix}");
+            classWriter.AppendLine($"public const {model.UnderlyingType} FirstNonUnknownOrdinal = ({model.UnderlyingType}){firstNonUnknownOrdinal.ToString(CultureInfo.InvariantCulture)};");
             foreach (var fieldFormatLength in fieldFormatLengths)
             {
-                AppendDoc(metadataWriter, FieldLongestCharLengthDoc(fieldFormatLength.Name));
-                metadataWriter.AppendLine($"public const int {fieldFormatLength.Name}_LongestCharLength = {fieldFormatLength.Length};");
+                AppendDoc(classWriter, $"{FieldLongestCharLengthDoc(fieldFormatLength.Name)} {ConstantDocSuffix}");
+                classWriter.AppendLine($"public const int {fieldFormatLength.Name}_LongestCharLength = {fieldFormatLength.Length};");
             }
-            AppendDoc(metadataWriter, firstNonUnknownDoc);
+            AppendDoc(classWriter, $"{firstNonUnknownDoc} {ConstantDocSuffix}");
             // A const, not a static readonly: enum values are compile-time constants, so this keeps the default output free
             // of static state (no field, no type initialization) and lets consumers use it in constant contexts.
-            metadataWriter.AppendLine($"public const {model.FullyQualifiedName} FirstNonUnknown = {firstNonUnknownExpression};");
+            classWriter.AppendLine($"public const {model.FullyQualifiedName} FirstNonUnknown = {firstNonUnknownExpression};");
         }
 
         return new GenResult
@@ -351,12 +382,12 @@ public sealed partial class FancyEnumSourceGenerator
     {
         ["AsUnderlying"] = "FancyEnum", ["HasFlagFancy"] = "FancyEnum", ["ListFlagMembers"] = "FancyEnum",
         ["ToStringFancy"] = "FancyEnum", ["DirectToStringFancy"] = "FancyEnum", ["TryFormat"] = "FancyEnum",
-        ["IsUnknown"] = "FancyEnum", ["ValueOrDefaultIfUnknown"] = "FancyEnum", ["AsUnderlyingNonUnknown"] = "FancyEnum",
+        ["IsUnknown"] = "FancyEnum", ["IsUnknownAndNotCombined"] = "FancyEnum", ["ValueOrDefaultIfUnknown"] = "FancyEnum", ["AsUnderlyingNonUnknown"] = "FancyEnum",
         ["Length"] = "FancyEnum", ["LongestCharLength"] = "FancyEnum", ["FirstNonUnknownOrdinal"] = "FancyEnum",
         ["FirstNonUnknown"] = "FancyEnum", ["FromUnderlying"] = "FancyEnum", ["FromUnderlyingNonUnknown"] = "FancyEnum",
         ["TryParseFancy"] = "FancyEnum", ["IsValidPrefixFancy"] = "FancyEnum", ["ParseOrUnknown"] = "FancyEnum",
         ["ParseOrDefault"] = "FancyEnum", ["Values"] = "FancyEnum", ["AsSpan"] = "FancyEnum",
-        ["s_values"] = "FancyEnum", ["s_valuesInitialized"] = "FancyEnum",
+        ["s_values"] = "FancyEnum", ["s_valuesInitialized"] = "FancyEnum", [AllDefinedFlagsName] = "FancyEnum",
         // Real instance members of every enum: an extension member with one of these names could never be called.
         ["ToString"] = "System.Enum", ["Equals"] = "System.Enum", ["GetHashCode"] = "System.Enum", ["GetType"] = "System.Enum",
         ["HasFlag"] = "System.Enum", ["CompareTo"] = "System.Enum", ["GetTypeCode"] = "System.Enum",
@@ -415,6 +446,8 @@ public sealed partial class FancyEnumSourceGenerator
         return colliding;
     }
 
+    private const string ConstantDocSuffix = "A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.";
+
     private const string ValuesDocPrefix = "Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order";
     private const string AsSpanDoc = "The same members as <c>Values</c>, as a read-only span over the cached static storage: no copy, no allocation.";
 
@@ -449,7 +482,7 @@ public sealed partial class FancyEnumSourceGenerator
 
     private static void AppendListFlagMembers(CodeWriter.BracedWriter writer, EnumModel model, EnumMemberModel[] arrayMembers, string arrayType)
     {
-        var flags = arrayMembers.Where(member => IsSingleBit(member.NumericValue, model.UnderlyingType)).OrderBy(static member => member.NumericValue < 0).ThenBy(static member => member.NumericValue);
+        var flags = InBitOrder(arrayMembers.Where(member => IsSingleBit(member.NumericValue, model.UnderlyingType)));
         AppendDoc(writer,
             "Lists the distinct single-bit flags set on this value, in bit order, without allocating. Zero, composite members, members excluded from <c>Values</c>, and undefined bits are omitted, so this is not a validity check.",
             null,
@@ -464,6 +497,32 @@ public sealed partial class FancyEnumSourceGenerator
             flagWriter.AppendLine($"values[length++] = {EnumTypeAlias}.{flag.Name};");
         }
     }
+
+    /// <summary>
+    /// Flags enums only: <c>IsUnknown</c>, except that a combination of declared flags (say <c>Read | Write</c>, which
+    /// isn't itself a declared member) doesn't count as unknown.
+    /// </summary>
+    /// <remarks>
+    /// A value with no bits outside the declared flags is a combination of them, so it's unknown only if it's the
+    /// Unknown member itself (0). A value with other bits set is almost always unknown, except for a declared member
+    /// whose bits no single-bit flag covers (<c>Weird = 24</c> with no 8 or 16 flag), so that rare case defers to
+    /// <c>IsUnknown</c>. The common path is one bit test.
+    /// </remarks>
+    private static void AppendIsUnknownAndNotCombined(CodeWriter.BracedWriter writer, EnumModel model, EnumMemberModel[] members, EnumMemberModel unknownMember)
+    {
+        AppendDoc(writer, $"Whether this value is <c>{unknownMember.Name}</c>, or is neither a declared member nor a combination of declared flags. Unlike <c>IsUnknown</c>, a combination such as two flags OR'd together isn't unknown.");
+        var hasSingleBitFlags = members.Any(member => IsSingleBit(member.NumericValue, model.UnderlyingType));
+        writer.AppendLine(hasSingleBitFlags
+            ? $"public bool IsUnknownAndNotCombined => {HasUndefinedFlagBits(model)} ? value.IsUnknown : value == {EnumTypeAlias}.{unknownMember.Name};"
+            : "public bool IsUnknownAndNotCombined => value.IsUnknown;"); // no single-bit flags, so nothing combines
+    }
+
+    /// <summary>
+    /// Single-bit flags from the lowest bit to the highest. A signed enum's sign-bit flag is negative, so it goes last
+    /// rather than first, matching <c>Enum.ToString()</c>, which orders flags by their unsigned bit pattern.
+    /// </summary>
+    private static IEnumerable<EnumMemberModel> InBitOrder(IEnumerable<EnumMemberModel> flags) =>
+        flags.OrderBy(static member => member.NumericValue < 0).ThenBy(static member => member.NumericValue);
 
     private static bool AreContiguous(EnumMemberModel[] members) => members.Length > 0 && members.Zip(members.Skip(1), static (left, right) => right.NumericValue - left.NumericValue).All(static difference => difference == 1);
 
@@ -532,7 +591,11 @@ public sealed partial class FancyEnumSourceGenerator
             longestCharLength = Math.Max(longestCharLength, AppendFlagsToString(writer, model, values));
         }
 
-        if (model.CreateTryFormat)
+        if (model.CreateTryFormat && model.IsFlags)
+        {
+            AppendFlagsTryFormat(writer, model, values);
+        }
+        else if (model.CreateTryFormat)
         {
             AppendDoc(writer,
                 "Writes <c>ToStringFancy()</c> into <paramref name=\"destination\"/>. Size the buffer with <c>LongestCharLength</c>.",
@@ -567,9 +630,57 @@ public sealed partial class FancyEnumSourceGenerator
         _ => "the member's name"
     };
 
+    /// <summary>
+    /// <c>TryFormat</c> for flags enums: the same output as <c>ToStringFancy(separator)</c>, but a combination that isn't
+    /// a declared member is written straight into the destination (no intermediate string). Its exact length is added
+    /// up from the set bits first, so a destination that's too small fails before anything is written.
+    /// </summary>
+    private static void AppendFlagsTryFormat(CodeWriter.BracedWriter writer, EnumModel model, Dictionary<EnumMemberModel, (string Expression, string Text)> values)
+    {
+        var flags = InBitOrder(values.Keys.Where(member => IsSingleBit(member.NumericValue, model.UnderlyingType))).ToArray();
+        AppendDoc(writer,
+            "Writes <c>ToStringFancy(separator)</c> into <paramref name=\"destination\"/> without allocating, including for a combination of flags. Size the buffer with <c>LongestCharLength</c> (which assumes a one-character separator, as this always is).",
+            "<see langword=\"true\"/> if the string fit; otherwise <see langword=\"false\"/>, with nothing written.",
+            ("destination", "The buffer to write into."),
+            ("charsWritten", "Receives the number of characters written, or 0 on failure."),
+            ("separator", "The character placed between flag strings in a combination."));
+        using var methodWriter = writer.StartBraced("public bool TryFormat(global::System.Span<char> destination, out int charsWritten, char separator = '|')");
+        methodWriter.AppendLine("var direct = value.DirectToStringFancy();");
+        using (var directWriter = methodWriter.StartBraced("if (direct is not null)"))
+        {
+            using (var failureWriter = directWriter.StartBraced("if (!direct.AsSpan().TryCopyTo(destination))"))
+            {
+                failureWriter.AppendLine("charsWritten = 0;");
+                failureWriter.AppendLine("return false;");
+            }
+            directWriter.AppendLine("charsWritten = direct.Length;");
+            directWriter.AppendLine("return true;");
+        }
+
+        // From here on, anything ToStringFancy would render as "" writes nothing and succeeds.
+        methodWriter.AppendLine("charsWritten = 0;");
+        if (flags.Length == 0)
+        {
+            methodWriter.AppendLine("return true;");
+            return;
+        }
+        methodWriter.AppendSimpleIf(HasUndefinedFlagBits(model), "return true;");
+        methodWriter.AppendLine("var length = -1;");
+        foreach (var member in flags)
+        {
+            using var flagWriter = methodWriter.StartBraced($"if ((value & {EnumTypeAlias}.{member.Name}) != 0)");
+            flagWriter.AppendLine($"length += {values[member].Text.Length + 1};");
+        }
+        methodWriter.AppendSimpleIf("length < 0", "return true;");
+        methodWriter.AppendSimpleIf("length > destination.Length", "return false;");
+        AppendFlagsCharacters(methodWriter, flags, values, "value", "separator", "destination");
+        methodWriter.AppendLine("charsWritten = length;");
+        methodWriter.AppendLine("return true;");
+    }
+
     private static int AppendFlagsToString(CodeWriter.BracedWriter writer, EnumModel model, Dictionary<EnumMemberModel, (string Expression, string Text)> values)
     {
-        var flags = values.Keys.Where(member => IsSingleBit(member.NumericValue, model.UnderlyingType)).OrderBy(member => member.NumericValue).ToArray();
+        var flags = InBitOrder(values.Keys.Where(member => IsSingleBit(member.NumericValue, model.UnderlyingType))).ToArray();
         AppendDoc(writer,
             $"This value's string form ({DescribeToStringBehavior(model)}). A declared member, including a declared composite, returns its own string without allocating; any other combination joins the strings of its set flags in bit order, allocating only that result.",
             "The string, or an empty string if this value has bits that aren't any declared flag.",
@@ -587,8 +698,7 @@ public sealed partial class FancyEnumSourceGenerator
             return 0;
         }
 
-        var knownFlags = string.Join(" | ", flags.Select(member => $"{EnumTypeAlias}.{member.Name}"));
-        using (var unknownWriter = methodWriter.StartBraced($"if ((value & ~({knownFlags})) != 0)"))
+        using (var unknownWriter = methodWriter.StartBraced($"if ({HasUndefinedFlagBits(model)})"))
         {
             unknownWriter.AppendLine("return string.Empty;");
         }

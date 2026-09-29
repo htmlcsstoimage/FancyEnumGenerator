@@ -91,8 +91,8 @@ public class BasicTests
     public void Metadata()
     {
         // The constants class is usable where a compile-time constant is required.
-        const int length = FruitExtensions.Length;
-        const Fruit first = FruitExtensions.FirstNonUnknown; // a const, so the default output has no static state
+        const int length = FruitFancyEnumExtensions.Length;
+        const Fruit first = FruitFancyEnumExtensions.FirstNonUnknown; // a const, so the default output has no static state
         Assert.Equal(4, length);
         Assert.Equal(Fruit.Apple, first);
         Assert.Equal(4, Fruit.Length);

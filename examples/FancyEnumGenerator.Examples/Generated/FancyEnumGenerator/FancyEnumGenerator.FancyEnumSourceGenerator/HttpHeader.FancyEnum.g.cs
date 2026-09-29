@@ -16,8 +16,8 @@ public struct HttpHeaderArray {
 	private global::HttpHeader _element0;
 }
 #endif
-/// <summary>FancyEnum-generated extension members for <see cref="global::HttpHeader"/>.</summary>
-public static class HttpHeaderFancyEnumExtensions {
+/// <summary>FancyEnum-generated extension members, and compile-time constants, for <see cref="global::HttpHeader"/>.</summary>
+public static partial class HttpHeaderFancyEnumExtensions {
 	extension(global::HttpHeader value) {
 		/// <summary>This value as its underlying <c>int</c>.</summary>
 		public int AsUnderlying => (int)value;
@@ -312,13 +312,13 @@ public static class HttpHeaderFancyEnumExtensions {
 	}
 	extension(global::HttpHeader) {
 		/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).</summary>
-		public static int Length => HttpHeaderExtensions.Length;
+		public static int Length => HttpHeaderFancyEnumExtensions.Length;
 		/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
-		public static int LongestCharLength => HttpHeaderExtensions.LongestCharLength;
+		public static int LongestCharLength => HttpHeaderFancyEnumExtensions.LongestCharLength;
 		/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
-		public static int FirstNonUnknownOrdinal => HttpHeaderExtensions.FirstNonUnknownOrdinal;
+		public static int FirstNonUnknownOrdinal => HttpHeaderFancyEnumExtensions.FirstNonUnknownOrdinal;
 		/// <summary>The lowest-valued member other than <c>Unknown</c>.</summary>
-		public static global::HttpHeader FirstNonUnknown => HttpHeaderExtensions.FirstNonUnknown;
+		public static global::HttpHeader FirstNonUnknown => HttpHeaderFancyEnumExtensions.FirstNonUnknown;
 		/// <summary>Converts a numeric value to the enum, returning <c>Unknown</c> if it isn't a declared member. Unlike a cast, the result is always a declared member.</summary>
 		/// <param name="underlying">The numeric value to convert.</param>
 		public static global::HttpHeader FromUnderlying(int underlying) {
@@ -2904,17 +2904,13 @@ public static class HttpHeaderFancyEnumExtensions {
 		result = default;
 		return false;
 	}
-	
-}
-/// <summary>Constants describing <see cref="global::HttpHeader"/>, usable where a compile-time constant is required (<c>const</c> fields, attribute arguments, <c>stackalloc</c> sizes). Also exposed as static extension properties on the enum itself.</summary>
-public static partial class HttpHeaderExtensions {
-	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).</summary>
+	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once). A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int Length = 90;
-	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size.</summary>
+	/// <summary>The length of the longest string <c>ToStringFancy()</c> can return: a safe <c>TryFormat</c> buffer size. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int LongestCharLength = 35;
-	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>.</summary>
+	/// <summary>The underlying numeric value of <c>FirstNonUnknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int FirstNonUnknownOrdinal = (int)1;
-	/// <summary>The lowest-valued member other than <c>Unknown</c>.</summary>
+	/// <summary>The lowest-valued member other than <c>Unknown</c>. A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const global::HttpHeader FirstNonUnknown = thisEnum.Accept;
 }
 #nullable disable
