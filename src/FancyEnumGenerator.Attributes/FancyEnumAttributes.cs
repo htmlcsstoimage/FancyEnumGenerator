@@ -437,6 +437,14 @@ public sealed class FancyEnumMemberSetItemAttribute : Attribute
     public object? DefaultValue { get; set; }
 
     /// <summary>
+    /// String properties only: for members that don't set this property, fall back to the member's name (as written,
+    /// lower-cased or upper-cased) instead of a constant - the same as
+    /// <see cref="FancyEnumMemberMappingSettingsAttribute.NotDefined"/>. <see cref="DefaultValue"/> takes precedence when
+    /// both are set. On a non-string property it's reported (HENUM012) and ignored.
+    /// </summary>
+    public FancyEnumMemberFallbackOption NotDefined { get; set; }
+
+    /// <summary>
     /// The value returned when no mapping applies (including for values that aren't a declared member). Overridden by
     /// <see cref="ThrowOnNotMatched"/>. Like <see cref="DefaultValue"/>, it must be a constant of exactly the property's
     /// type; a mismatch is reported (HENUM012) and the value is ignored.

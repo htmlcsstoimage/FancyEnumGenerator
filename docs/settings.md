@@ -302,6 +302,7 @@ needs `[FancyEnum]` (**HENUM016** warns if it's missing). Each property can be t
 | `Name` | The field's name, instead of the property's (`[FancyEnumMemberSetItem(Name = "SortOrder")] public int Order`) |
 | `Ignore` | Not a field at all: for properties the class uses for something else |
 | `DefaultValue` | The value for members that don't set this property, like `NotDefined` for fields |
+| `NotDefined` | String properties only: fall back to the member's name instead (`NameOf`, `NameOfLower`, `NameOfUpper`), as for string fields. `DefaultValue` wins if both are set; on a non-string property it's **HENUM012** and ignored |
 | `NotMatched` | As for fields |
 | `ReturnNullOnNotMatched`, `ThrowOnNotMatched`, `ParseFrom`, `CreateTryFormat`, `IncludeUtf8Value` | As for fields |
 | `ParseCaseSensitive` | As for fields: inherits the using enum's `ParseCaseSensitive` when not set |

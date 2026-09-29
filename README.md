@@ -210,6 +210,7 @@ Per-property controls via `[FancyEnumMemberSetItem]`:
 | `Name` | Override the generated field name (defaults to the property's own name). |
 | `Ignore` | Excludes the property entirely — it's not a mapped field (e.g. a property the shape uses for something else). |
 | `DefaultValue` | Fallback value for a member that didn't set this property. Must match the property's own type exactly — a mismatch reports `HENUM012` and the default is dropped, not silently miscompiled. |
+| `NotDefined` | String properties only: fall back to the member's name (`NameOf`, `NameOfLower`, `NameOfUpper`) instead of a constant, as on `[FancyEnumMemberMappingSettings]`. `DefaultValue` wins if both are set. |
 | `NotMatched` | Value returned when no mapping applies. Same type rule (and `HENUM012`) as `DefaultValue`. |
 | `ReturnNullOnNotMatched`, `ThrowOnNotMatched`, `ParseFrom`, `ParseCaseSensitive`, `CreateTryFormat`, `IncludeUtf8Value` | Same meaning as on `[FancyEnumMemberMappingSettings]`. |
 
@@ -298,7 +299,7 @@ references a static readonly field or parameterless static method instead of a l
 | HENUM009 | `ParseFrom` requested but unavailable (non-string field, a `StaticMethodSource` value, or no string values to parse). |
 | HENUM010 (warning) | A `[Flags]` member's value isn't zero or a single bit — use `ExcludeFromValues` for intentional composites. |
 | HENUM011 | `IncludeUtf8Value` requested but unavailable (non-string field, or a value computed at runtime). |
-| HENUM012 | A `FancyEnumMemberSetItem.DefaultValue` or `NotMatched` doesn't match its property's type; the value is dropped. |
+| HENUM012 | A `FancyEnumMemberSetItem.DefaultValue` or `NotMatched` doesn't match its property's type, or `NotDefined` is set on a non-string property; the value is dropped. |
 | HENUM013 | A member-set constructor parameter doesn't resolve to any property; add `FancyEnumConstructorMapping`. |
 | HENUM014 | A mapped field would generate a member whose name FancyEnum or `System.Enum` already uses (e.g. `Length`, `Values`, `ToString`), or that another field also generates. |
 | HENUM015 | A member-set property can never be set: its type can't be an attribute argument, or it's read-only with no constructor parameter mapped to it. |

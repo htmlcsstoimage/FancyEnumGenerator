@@ -56,6 +56,11 @@ public class DiagnosticTests
             public sealed class MetaAttribute : System.Attribute { [FancyEnumMemberSetItem(NotMatched = "none")] public int Size { get; set; } }
             [FancyEnum] public enum E { Unknown, [Meta(Size = 1)] A }
             """ },
+        { "HENUM012", "NotDefined on a non-string property", """
+            [FancyEnumMemberSet, System.AttributeUsage(System.AttributeTargets.Field)]
+            public sealed class MetaAttribute : System.Attribute { [FancyEnumMemberSetItem(NotDefined = FancyEnumMemberFallbackOption.NameOf)] public int Size { get; set; } }
+            [FancyEnum] public enum E { Unknown, [Meta(Size = 1)] A }
+            """ },
         { "HENUM013", "unresolvable constructor parameter", """
             [FancyEnumMemberSet, System.AttributeUsage(System.AttributeTargets.Field)]
             public sealed class MetaAttribute(string text) : System.Attribute { public string Label { get; } = text; }

@@ -60,6 +60,13 @@ public sealed partial class FancyEnumSourceGenerator
             var returnType = FormatReturnType(property.Type);
             var defaultValue = ReadMatchingValue(item, nameof(FancyEnumMemberSetItemAttribute.DefaultValue), property, shapeName, diagnostics);
             var notMatched = ReadMatchingValue(item, nameof(FancyEnumMemberSetItemAttribute.NotMatched), property, shapeName, diagnostics);
+            var notDefined = item.TryReadNamedEnum<FancyEnumMemberFallbackOption>(nameof(FancyEnumMemberSetItemAttribute.NotDefined), out var fallback) ? fallback : default;
+            if (notDefined != FancyEnumMemberFallbackOption.Skip && property.Type.SpecialType != SpecialType.System_String)
+            {
+                diagnostics.Add(DiagnosticInfo.Create(EnumGeneratorDiagnostics.MemberSetValueTypeMismatch, location,
+                    shapeName, property.Name, property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "string", nameof(FancyEnumMemberSetItemAttribute.NotDefined)));
+                notDefined = default;
+            }
             fields.Add(new MemberSetFieldModel
             {
                 PropertyName = property.Name,
@@ -70,6 +77,7 @@ public sealed partial class FancyEnumSourceGenerator
                     FieldName = fieldName,
                     ReturnType = returnType,
                     IsNonStringReferenceType = IsNonStringReferenceType(property.Type),
+                    NotDefined = notDefined,
                     NotDefinedExpression = defaultValue is { } notDefinedValue ? FormatConstant(notDefinedValue, returnType) : null,
                     NotDefinedStringValue = defaultValue?.Value as string,
                     NotMatchedExpression = notMatched is { } notMatchedValue ? FormatConstant(notMatchedValue, returnType) : null,

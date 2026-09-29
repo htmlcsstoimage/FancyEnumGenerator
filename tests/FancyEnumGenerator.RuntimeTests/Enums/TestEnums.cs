@@ -90,6 +90,23 @@ public sealed class CssClassAttribute([FancyEnumConstructorMapping(nameof(CssCla
     public string ClassName { get; } = css;
 }
 
+[FancyEnumMemberSet]
+[AttributeUsage(AttributeTargets.Field)]
+public sealed class CssValueAttribute(string cssValue) : Attribute
+{
+    [FancyEnumMemberSetItem(NotDefined = FancyEnumMemberFallbackOption.NameOfLower, ParseFrom = true, CreateTryFormat = true, IncludeUtf8Value = true)]
+    public string CssValue { get; } = cssValue;
+}
+
+[FancyEnum]
+public enum Alignment
+{
+    Unknown = 0,
+    [CssValue("flex-start")] Start = 1,
+    Center = 2, // no CssValue: falls back to "center"
+    [CssValue("flex-end")] End = 3,
+}
+
 [FancyEnum]
 public enum Vegetable
 {

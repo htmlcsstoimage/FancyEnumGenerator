@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using FancyEnumGenerator.RuntimeTests.Enums;
 using Xunit;
@@ -29,6 +30,19 @@ public class MemberSetTests
     {
         Assert.Equal("", Vegetable.Leek.Label);
         Assert.Equal("", Vegetable.Pea.ClassName);
+    }
+
+    [Fact]
+    public void NotDefinedNameFallback()
+    {
+        Assert.Equal("flex-start", Alignment.Start.CssValue);
+        Assert.Equal("center", Alignment.Center.CssValue);
+        Assert.Equal("center"u8.ToArray(), Alignment.Center.CssValueBytes.ToArray());
+        Assert.True(Alignment.TryParseFrom_CssValue("center", out var center));
+        Assert.Equal(Alignment.Center, center);
+        Span<char> buffer = stackalloc char[16];
+        Assert.True(Alignment.Center.TryFormat_CssValue(buffer, out var written));
+        Assert.Equal("center", buffer[..written].ToString());
     }
 
     [Fact]
