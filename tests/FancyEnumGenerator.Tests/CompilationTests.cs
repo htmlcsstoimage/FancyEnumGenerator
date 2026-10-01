@@ -11,9 +11,11 @@ public class CompilationTests
     {
         ["Defaults"] = [],
         ["NoParsing"] = new() { ["FancyEnumGenerateParseMethods"] = "false" },
-        ["Everything"] = new() { ["FancyEnumCreateByteParsing"] = "true", ["FancyEnumCreateTryFormat"] = "true", ["FancyEnumCreateStaticReadonlyCollection"] = "true" },
+        ["Everything"] = new() { ["FancyEnumCreateByteParsing"] = "true", ["FancyEnumCreateTryFormat"] = "true", ["FancyEnumValuesType"] = "StaticCollection" },
+        ["SpanValues"] = new() { ["FancyEnumValuesType"] = "Span" },
+        ["InlineArrayValues"] = new() { ["FancyEnumValuesType"] = "InlineArray" },
         ["NoInlineArray"] = new() { ["FancyEnumNoInlineArray"] = "true" },
-        ["NoInlineArrayCached"] = new() { ["FancyEnumNoInlineArray"] = "true", ["FancyEnumCreateStaticReadonlyCollection"] = "true" },
+        ["NoInlineArrayStatic"] = new() { ["FancyEnumNoInlineArray"] = "true", ["FancyEnumValuesType"] = "StaticCollection" },
         ["CaseInsensitive"] = new() { ["FancyEnumParseCaseSensitive"] = "false" },
     };
 
@@ -45,7 +47,18 @@ public class CompilationTests
     public void CompilesCleanly(string scenario, TargetProfile profile, string optionSet)
     {
         var run = GeneratorHarness.Run(Scenarios.All.Single(candidate => candidate.Name == scenario).Source, profile, OptionSets[optionSet]);
-        run.AssertNoGeneratorDiagnostics();
+        // Explicitly asking for a Values type that can't be generated (one netstandard2.0 lacks, or InlineArray alongside
+        // NoInlineArray) is reported for the enums it affects, and otherwise just leaves Values out, so the rest still compiles.
+        var downlevel = profile == TargetProfile.NetStandard20 && optionSet is "SpanValues" or "InlineArrayValues";
+        var inlineArrayWithout = (optionSet == "InlineArrayValues" && scenario == "Collections") || (scenario == "InlineArrayValues" && optionSet is "NoInlineArray" or "NoInlineArrayStatic");
+        if (downlevel || inlineArrayWithout)
+        {
+            Assert.All(run.GeneratorDiagnostics, static diagnostic => Assert.Equal("HENUM017", diagnostic.Id));
+        }
+        else
+        {
+            run.AssertNoGeneratorDiagnostics();
+        }
         run.AssertCompilesCleanly();
     }
 

@@ -200,14 +200,39 @@ public static class Scenarios
 
             namespace Demo;
 
-            [FancyEnum(CreateStaticReadonlyCollection = true)]
+            [FancyEnum(ValuesType = FancyEnumValuesType.StaticCollection)]
             public enum Cached { Unknown, A, B, [FancyEnumMemberSettings(ExcludeFromValues = true)] Hidden, C }
 
-            [FancyEnum(NoInlineArray = true, CreateStaticReadonlyCollection = true)]
+            [FancyEnum(NoInlineArray = true, ValuesType = FancyEnumValuesType.StaticCollection)]
             public enum PlainArray { Unknown, A, B }
+
+            [FancyEnum]
+            public enum Spanned { Unknown, A, B, [FancyEnumMemberSettings(ExcludeFromValues = true)] Hidden, C }
+
+            [FancyEnum(ValuesType = FancyEnumValuesType.Span)]
+            public enum SmallSpan : byte { Unknown, A, B }
 
             [FancyEnum(NoInlineArray = true)]
             public enum NoCollection { Unknown, A, B }
+            """
+    };
+
+    /// <summary>ValuesType = InlineArray needs .NET 8+, so this one only builds there (downlevel it reports HENUM017 instead).</summary>
+    public static readonly Scenario InlineArrayValues = new()
+    {
+        Name = nameof(InlineArrayValues),
+        Net10Only = true,
+        Source = """
+            using FancyEnumGenerator.Attributes;
+
+            namespace Demo;
+
+            [FancyEnum(ValuesType = FancyEnumValuesType.InlineArray)]
+            public enum Inline { Unknown, A, B, [FancyEnumMemberSettings(ExcludeFromValues = true)] Hidden, C }
+
+            [System.Flags]
+            [FancyEnum(ValuesType = FancyEnumValuesType.InlineArray, AllowNoUnknown = true)]
+            public enum InlineFlags : long { None = 0, A = 1, B = 2, C = 1L << 40 }
             """
     };
 
@@ -288,5 +313,5 @@ public static class Scenarios
             """
     };
 
-    public static readonly IReadOnlyList<Scenario> All = [Basic, Flags, FieldMappings, MemberSet, ToStringAttributes, Collections, Parsing, Shapes];
+    public static readonly IReadOnlyList<Scenario> All = [Basic, Flags, FieldMappings, MemberSet, ToStringAttributes, Collections, InlineArrayValues, Parsing, Shapes];
 }

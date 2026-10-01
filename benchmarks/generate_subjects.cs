@@ -51,7 +51,7 @@ var parts = new List<string> { header };
 // Compared across all libraries: (name, FancyEnum attributes, body), each also emitted as Ne{name} for NetEscapades.
 (string Name, string Fancy, string Body)[] shared =
 [
-    ("Medium", "[FancyEnum(CreateByteParsing = true, CreateTryFormat = true, CreateStaticReadonlyCollection = true)]", unknown + Members(medium, description)),
+    ("Medium", "[FancyEnum(CreateByteParsing = true, CreateTryFormat = true)]", unknown + Members(medium, description)),
     ("Large", "[FancyEnum]", unknown + Members(large)),
 ];
 foreach (var (name, fancy, body) in shared)
@@ -66,6 +66,9 @@ parts.Add(Enum("Permissions", "[Flags]\n[FancyEnum(AllowNoUnknown = true)]", fla
 // FancyEnum picks its ToString source per enum, so descriptions get their own copy of Medium; the BCL reads
 // [Description] off Medium by reflection for the same comparison.
 parts.Add(Enum("MediumDescribed", "[FancyEnum(DefaultToStringBehavior = FancyEnumDefaultToStringBehavior.DescriptionAttribute)]", unknown + Members(medium, description)));
+// The same members with each of the other ValuesType options, for the enumeration benchmark (Medium uses the default, Span).
+parts.Add(Enum("MediumInline", "[FancyEnum(ValuesType = FancyEnumValuesType.InlineArray)]", unknown + Members(medium)));
+parts.Add(Enum("MediumCached", "[FancyEnum(ValuesType = FancyEnumValuesType.StaticCollection)]", unknown + Members(medium)));
 // Custom per-member metadata: FancyEnum generates accessors; the BCL reads the attribute at runtime.
 parts.Add(Enum("Station", "[FancyEnum]", unknown + Members(medium, stationInfo)));
 

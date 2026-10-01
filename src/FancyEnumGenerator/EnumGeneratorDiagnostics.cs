@@ -20,6 +20,7 @@ internal static class EnumGeneratorDiagnostics
     public static readonly DiagnosticDescriptor ReservedFieldName = Create("HENUM014", "Mapped field name collides with a generated member", "Enum '{0}' field '{1}' would generate member '{2}', which {3}; rename the field");
     public static readonly DiagnosticDescriptor MemberSetPropertyUnusable = Create("HENUM015", "Member-set property can never be set", "Property '{0}.{1}' {2}; mark it [FancyEnumMemberSetItem(Ignore = true)] or change it");
     public static readonly DiagnosticDescriptor MemberSetWithoutFancyEnum = Create("HENUM016", "Member-set attribute on an enum without [FancyEnum]", "Enum '{0}' uses member-set attribute '{1}' but has no [FancyEnum], so nothing is generated for it; add [FancyEnum]", DiagnosticSeverity.Warning);
+    public static readonly DiagnosticDescriptor ValuesTypeUnavailable = Create("HENUM017", "Values type unavailable for this target", "Enum '{0}' sets ValuesType = {1}, but {2}, so Values isn't generated for this target", DiagnosticSeverity.Warning);
 
     private static DiagnosticDescriptor Create(string id, string title, string message, DiagnosticSeverity severity = DiagnosticSeverity.Error)
     {

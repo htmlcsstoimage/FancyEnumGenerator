@@ -48,10 +48,11 @@ Check(Region.TryParseFrom_Code("g4", out _) && !Region.TryParseFrom_Code("g4", i
 var codeBuffer = new char[Region.Code_LongestCharLength];
 Check(Region.Omega.TryFormat_Code(codeBuffer, out var codeLength) && new string(codeBuffer, 0, codeLength) == "O5", "TryFormat_Code");
 
-// Cached collection and its span. Values is an inline-array struct on .NET 8+ and an IReadOnlyList (over a plain
-// array) downlevel; both have an indexer, and AsSpan is the same everywhere.
-Check(Region.Values[0] == Region.Alpha, "Values");
-Check(Region.AsSpan.Length == 11 && Region.AsSpan[10] == Region.WestCoastRegion05, "AsSpan");
+// Values. StaticCollection is an IReadOnlyList over a cached array on every target, with a span over it. The default for a
+// 1-byte enum is a span over static data, which works on .NET Framework too.
+Check(Region.Values[0] == Region.Alpha && Region.Values.Count == 11, "StaticCollection Values");
+Check(Region.AsSpan.Length == 11 && Region.AsSpan[10] == Region.WestCoastRegion05, "StaticCollection AsSpan");
+Check(Size.Values.Length == 2 && Size.Values[1] == Size.Large && Size.Values[0] == Size.Small, "byte enum Values span");
 
 // Prefix checks.
 Check(Region.IsValidPrefixFancy(Encoding.UTF8.GetBytes("WestCoast"), Encoding.UTF8.GetBytes("Region0")), "IsValidPrefixFancy hit");

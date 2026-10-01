@@ -10,7 +10,10 @@ internal sealed record EnumModel
     public string UnderlyingType { get; init; } = "int";
     public string Accessibility { get; init; } = "internal";
     public bool NoInlineArray { get; init; }
-    public bool CreateStaticReadonlyCollection { get; init; }
+    public FancyEnumValuesType ValuesType { get; init; }
+    /// <summary>Whether ValuesType was set explicitly (enum, assembly or MSBuild), so an unavailable choice is worth reporting.</summary>
+    public bool ValuesTypeIsExplicit { get; init; }
+    public GeneratorLocationInfo? Location { get; init; }
     public bool AllowNonContiguous { get; init; }
     public bool AllowNoUnknown { get; init; }
     public bool IncludeObsolete { get; init; }
@@ -101,4 +104,14 @@ internal sealed record MemberMappingModel
     public string Expression { get; init; } = "";
     public string? StringValue { get; init; }
     public bool HasStaticMemberSource { get; init; }
+}
+
+/// <summary>What the current target supports, read from its preprocessor symbols (the same ones the generated <c>#if</c> blocks test).</summary>
+internal readonly record struct TargetFeatures(bool HasCreateSpan, bool HasInlineArray)
+{
+    public static TargetFeatures From(IEnumerable<string> preprocessorSymbols)
+    {
+        var symbols = preprocessorSymbols as ICollection<string> ?? preprocessorSymbols.ToArray();
+        return new TargetFeatures(symbols.Contains("NET7_0_OR_GREATER"), symbols.Contains("NET8_0_OR_GREATER"));
+    }
 }

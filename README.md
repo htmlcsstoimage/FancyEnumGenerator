@@ -49,7 +49,7 @@ Fruit.TryParseFancy("Banana", out var f);  // true, f == Fruit.Banana
 Fruit.Apple.IsUnknown;                     // false
 ((Fruit)7).IsUnknown;                      // true
 Fruit.Unknown.IsUnknown;                   // true
-Fruit.Values;                              // every non-Unknown member (Apple, Banana, Cherry)
+Fruit.Values;                              // every non-Unknown member (Apple, Banana, Cherry), as a ReadOnlySpan
 ```
 
 `[FancyEnum]` enforces two rules by default (both can be relaxed — see [Settings](#settings)):
@@ -143,7 +143,7 @@ The settings you're most likely to change:
 | `DefaultToStringBehavior` | `NameOf` | What `ToStringFancy()` returns: the name, lower- or upper-cased, a field's value, or the member's `[Description]`, `[Display]`, `[EnumMember]` or `[JsonStringEnumMemberName]`. |
 | `CreateByteParsing` | `false` | Add UTF-8 (`ReadOnlySpan<byte>`) parse overloads. |
 | `CreateTryFormat` | `false` | Add `TryFormat(Span<char>, out int)`, which formats into your own buffer. |
-| `CreateStaticReadonlyCollection` | `false` | Cache `Values` in a static field and add a zero-copy `AsSpan`. |
+| `ValuesType` | `Span` | What `Values` returns: a zero-copy `ReadOnlySpan<T>` (`Span`), a storable inline-array copy (`InlineArray`) or a cached `IReadOnlyList<T>` (`StaticCollection`). |
 | `IncludeObsolete` | `false` | Generate `[Obsolete]` members too; by default they're left out. |
 
 Each can be set in three places. For each setting, the first of these that sets it wins:
@@ -306,6 +306,7 @@ references a static readonly field or parameterless static method instead of a l
 | HENUM014 | A mapped field would generate a member whose name FancyEnum or `System.Enum` already uses (e.g. `Length`, `Values`, `ToString`), or that another field also generates. |
 | HENUM015 | A member-set property can never be set: its type can't be an attribute argument, or it's read-only with no constructor parameter mapped to it. |
 | HENUM016 (warning) | An enum uses a member-set attribute but has no `[FancyEnum]`, so nothing is generated for it. |
+| HENUM017 (warning) | An explicitly chosen `ValuesType` can't be generated for this target (`Span` on a wider-than-byte enum before .NET 7, `InlineArray` before .NET 8 or with `NoInlineArray`), so `Values` is left out there. |
 
 ## Examples
 
@@ -329,13 +330,13 @@ Nothing here allocates except where noted.
 
 ## Footprint
 
-- **No runtime state by default.** Generated members are `switch` expressions over constants and string literals, so an
-  enum adds no static fields and no heap allocations, even on first use. The one exception is the opt-in
-  `CreateStaticReadonlyCollection`: it adds one lazily filled buffer of N × the enum's size, or a plain array when
-  combined with `NoInlineArray`.
-- **Code size, in exchange.** The generated code is compiled into your assembly. In a release build that's about 6.5 KB
-  for a 25-member enum with default settings, about 11.5 KB with UTF-8 parsing, `TryFormat` and the cached collection
-  all on, and about 38 KB for a 200-member enum. Much of that is parsing: exact and case-insensitive lookups each get
+- **No runtime state by default.** Generated members are `switch` expressions over constants and string literals, and
+  `Values` is a span over data stored in your assembly, so an enum adds no static fields and no heap allocations, even
+  on first use. The one exception is the opt-in `ValuesType = StaticCollection`, which adds one array of the members,
+  created once.
+- **Code size, in exchange.** The generated code is compiled into your assembly. In a release build that's about 6 KB
+  for a 25-member enum with default settings, about 10 KB with UTF-8 parsing, `TryFormat` and a cached collection
+  all on, and about 36 KB for a 200-member enum. Much of that is parsing: exact and case-insensitive lookups each get
   their own set of `switch` cases. On top of that comes about 1.5 KB of shared parsing helpers, once per assembly. The
   BCL and reflection-based libraries add no code to your assembly; instead they build their caches at runtime.
 
@@ -346,7 +347,7 @@ Nothing here allocates except where noted.
 
 ## About
 
-FancyEnumGenerator is built and maintained by [HTML/CSS to Image](https://htmlcsstoimage.com), an API for turning HTML/CSS or a URL into an image. We use it for the 150-plus enums across our own codebase. For the story behind it, and how the parsers got fast, see [the blog post](https://htmlcsstoimage.com/blog/fancy-enum-generator).
+FancyEnumGenerator is built and maintained by [HTML/CSS to Image](https://htmlcsstoimage.com), an API for turning HTML/CSS or a URL into an image. We use it for the 150-plus enums across our own codebase. For the story behind it, and how the parsers got fast, see [the blog post](https://htmlcsstoimage.com/blog/fancy-enum-generator). Release notes and upgrade guides are in [CHANGELOG.md](https://github.com/htmlcsstoimage/FancyEnumGenerator/blob/main/CHANGELOG.md).
 
 ## License
 

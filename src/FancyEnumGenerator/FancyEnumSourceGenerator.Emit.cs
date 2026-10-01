@@ -11,14 +11,13 @@ public sealed partial class FancyEnumSourceGenerator
     private const string CharSpanAlias = "CharSpan";
     private const string ByteSpanAlias = "ByteSpan";
     private const string StringComparisonAlias = "StringComparison";
-    private const string InlineArrayAlias = "InlineArray";
     /// <summary>The private const holding every declared single-bit flag of a flags enum (see <see cref="HasUndefinedFlagBits"/>).</summary>
     private const string AllDefinedFlagsName = "FancyFlagAllDefined";
 
     /// <summary>Whether <c>value</c> has any bit that isn't one of the enum's declared flags.</summary>
     private static string HasUndefinedFlagBits(EnumModel model) => $"(({model.UnderlyingType})value & ~{AllDefinedFlagsName}) != 0";
 
-    private static GenResult Emit(EnumModel model)
+    private static GenResult Emit(EnumModel model, TargetFeatures target)
     {
         var diagnostics = model.Diagnostics.ToList();
         if (model.FullyQualifiedName.Length == 0 || diagnostics.Any(static diagnostic => diagnostic.Descriptor == EnumGeneratorDiagnostics.UnsupportedEnumContainer))
@@ -52,7 +51,14 @@ public sealed partial class FancyEnumSourceGenerator
         // The static extension properties forward to constants of the same name in this same class (see the end of it).
         var metadataType = $"{model.GeneratedName}FancyEnumExtensions";
         var valuesInitializer = string.Join(", ", arrayMembers.Select(member => $"{EnumTypeAlias}.{member.Name}"));
-        var createTargetConditionalValues = !model.NoInlineArray && arrayMembers.Length > 0;
+        var hasValues = arrayMembers.Length > 0;
+        // The [InlineArray] struct backs ListFlagMembers on flags enums and ValuesType = InlineArray, and nothing else.
+        var createInlineArrayType = !model.NoInlineArray && hasValues && (model.IsFlags || model.ValuesType == FancyEnumValuesType.InlineArray);
+        // A span over constant elements compiles to static data in the assembly: for 1-byte types on every target, for
+        // wider ones only where RuntimeHelpers.CreateSpan exists (.NET 7+). Anywhere else it would allocate an array
+        // on every access, so it isn't generated there.
+        var spanNeedsCreateSpan = model.UnderlyingType is not ("byte" or "sbyte");
+        AppendValuesTypeDiagnostics(model, target, hasValues, spanNeedsCreateSpan, diagnostics);
         var usesByteSpan = model.CreateByteParsing || model.CreateIsValidPrefix || model.MappingSettings.Any(static settings => settings.IncludeUtf8Value);
         var enumCref = $"<see cref=\"{model.FullyQualifiedName}\"/>";
         var lengthDoc = "The number of distinct declared values, including the Unknown member (members sharing a numeric value count once).";
@@ -74,22 +80,19 @@ public sealed partial class FancyEnumSourceGenerator
         // it in scope; consumers can't be assumed to have `using System;` (e.g. ImplicitUsings off). `using static`
         // imports only that class's members, never System's type names, so it can't clash with the consumer's types.
         writer.AppendLine("using static global::System.MemoryExtensions;");
-        if (createTargetConditionalValues)
-        {
-            writer.AppendLine("#if NET8_0_OR_GREATER");
-            writer.AppendLine($"using {InlineArrayAlias} = global::System.Runtime.CompilerServices.InlineArrayAttribute;");
-            writer.AppendLine("#endif");
-        }
         if (model.Namespace.Length > 0)
         {
             writer.AppendLine($"namespace {model.Namespace};");
         }
 
-        if (createTargetConditionalValues)
+        if (createInlineArrayType)
         {
             writer.AppendLine("#if NET8_0_OR_GREATER");
-            writer.AppendLine($"/// <summary>A fixed-size inline buffer of {arrayMembers.Length} {enumCref} values, as returned by <c>Values</c>/<c>ListFlagMembers</c>: a value type, so no heap allocation. Index it, <c>foreach</c> over it, or convert it to a span.</summary>");
-            writer.AppendLine($"[{InlineArrayAlias}({arrayMembers.Length})]");
+            var returnedBy = string.Join("/", new[] { model.ValuesType == FancyEnumValuesType.InlineArray ? "<c>Values</c>" : null, model.IsFlags ? "<c>ListFlagMembers</c>" : null }.Where(static name => name is not null));
+            writer.AppendLine($"/// <summary>A fixed-size inline buffer of {arrayMembers.Length} {enumCref} values, as returned by {returnedBy}: a value type, so no heap allocation. Index it, <c>foreach</c> over it, or convert it to a span.</summary>");
+            // Fully qualified, not aliased: the struct this attribute marks is named {Enum}Array, so an enum called Inline
+            // would generate an InlineArray type that shadows any alias of that name.
+            writer.AppendLine($"[global::System.Runtime.CompilerServices.InlineArray({arrayMembers.Length})]");
             using (var arrayWriter = writer.StartBraced($"{model.Accessibility} struct {arrayType}"))
             {
                 arrayWriter.AppendLine($"private {model.FullyQualifiedName} _element0;");
@@ -110,26 +113,11 @@ public sealed partial class FancyEnumSourceGenerator
                 var definedFlags = string.Join(" | ", members.Where(member => IsSingleBit(member.NumericValue, model.UnderlyingType)).Select(static member => $"{EnumTypeAlias}.{member.Name}"));
                 classWriter.AppendLine($"private const {model.UnderlyingType} {AllDefinedFlagsName} = ({model.UnderlyingType})({definedFlags});");
             }
-            if (model.CreateStaticReadonlyCollection && arrayMembers.Length > 0)
+            if (model.ValuesType == FancyEnumValuesType.StaticCollection && hasValues)
             {
-                // Opted into a cached, stable collection with a genuine AsSpan (below) - lazily built on first
-                // access rather than eagerly, so an enum nobody ever calls Values/AsSpan on pays nothing.
-                if (createTargetConditionalValues)
-                {
-                    classWriter.AppendLine("#if NET8_0_OR_GREATER");
-                    AppendLazyInlineValuesField(classWriter, model, arrayMembers, arrayType);
-                    classWriter.AppendLine("#else");
-                }
+                // The one array StaticCollection costs, created once. Span and InlineArray need no static field.
                 classWriter.AppendLine($"private static readonly {model.FullyQualifiedName}[] s_values = [{valuesInitializer}];");
-                if (createTargetConditionalValues)
-                {
-                    classWriter.AppendLine("#endif");
-                }
             }
-            // else (the default): no static field at all. On .NET 8+, Values is built fresh on every access
-            // (see AppendFreshInlineValues below) - cheap, since it's a value-type copy, not a heap allocation.
-            // On older targets there's no allocation-free alternative to offer, so Values/AsSpan simply aren't
-            // generated unless CreateStaticReadonlyCollection opts in.
 
             using (var valueExtension = classWriter.StartBraced($"extension({model.FullyQualifiedName} value)"))
             {
@@ -142,7 +130,7 @@ public sealed partial class FancyEnumSourceGenerator
                         "<see langword=\"true\"/> if <c>(value &amp; flag) == flag</c>.",
                         ("flag", "The flag (or combination of flags) to test for."));
                     valueExtension.AppendLine($"public bool HasFlagFancy({model.FullyQualifiedName} flag) => (({model.UnderlyingType})value & ({model.UnderlyingType})flag) == ({model.UnderlyingType})flag;");
-                    if (createTargetConditionalValues)
+                    if (createInlineArrayType)
                     {
                         valueExtension.AppendLine("#if NET8_0_OR_GREATER");
                         AppendListFlagMembers(valueExtension, model, arrayMembers, arrayType);
@@ -279,32 +267,9 @@ public sealed partial class FancyEnumSourceGenerator
                         staticExtension.AppendLine($"public static {model.FullyQualifiedName} {parseMethodName}({spanType} input, bool ignoreCase) => {EnumTypeAlias}.TryParseFancy(input, ignoreCase, out var result) ? result : {parseFallback};");
                     }
                 }
-                if (model.CreateStaticReadonlyCollection && arrayMembers.Length > 0)
+                if (hasValues)
                 {
-                    if (createTargetConditionalValues)
-                    {
-                        staticExtension.AppendLine("#if NET8_0_OR_GREATER");
-                        AppendCachedInlineValuesAndSpan(staticExtension, model, arrayType, arrayMembers.Length);
-                        staticExtension.AppendLine("#else");
-                    }
-                    // s_values is a plain array here. Values is typed as IReadOnlyList<T> rather than T[] so
-                    // callers can't reach in and mutate the shared static backing storage (arrays satisfy
-                    // IReadOnlyList<T> natively - no wrapper object, so this costs nothing extra). AsSpan is
-                    // still the implicit array-to-span conversion straight off the field itself.
-                    AppendDoc(staticExtension, $"{ValuesDocPrefix}, backed by a shared static array. Read-only: the array itself is never exposed.");
-                    staticExtension.AppendLine($"public static global::System.Collections.Generic.IReadOnlyList<{model.FullyQualifiedName}> Values => s_values;");
-                    AppendDoc(staticExtension, AsSpanDoc);
-                    staticExtension.AppendLine($"public static global::System.ReadOnlySpan<{model.FullyQualifiedName}> AsSpan => s_values;");
-                    if (createTargetConditionalValues)
-                    {
-                        staticExtension.AppendLine("#endif");
-                    }
-                }
-                else if (createTargetConditionalValues)
-                {
-                    staticExtension.AppendLine("#if NET8_0_OR_GREATER");
-                    AppendFreshInlineValues(staticExtension, model, arrayMembers, arrayType);
-                    staticExtension.AppendLine("#endif");
+                    AppendValuesAndAsSpan(staticExtension, model, arrayMembers, arrayType, valuesInitializer, spanNeedsCreateSpan);
                 }
 
                 if (model.GenerateParseMethods)
@@ -443,7 +408,7 @@ public sealed partial class FancyEnumSourceGenerator
     private const string ConstantDocSuffix = "A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.";
 
     private const string ValuesDocPrefix = "Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order";
-    private const string AsSpanDoc = "The same members as <c>Values</c>, as a read-only span over the cached static storage: no copy, no allocation.";
+    private const string SpanLimitationsDoc = "A ref struct, so it can't be stored in a field or kept across an <c>await</c>.";
 
     private static string FieldLongestCharLengthDoc(string formatName) =>
         $"The length of the longest string <c>TryFormat_{formatName}</c> can write: a safe buffer size for it.";
@@ -991,62 +956,57 @@ public sealed partial class FancyEnumSourceGenerator
     }
 
     /// <summary>
-    /// Declares the lazily-populated backing field for the .NET 8+ inline-array Values/AsSpan pair (opted into
-    /// via CreateStaticReadonlyCollection), plus the ensure/factory methods that populate it on first access.
-    /// Lazy rather than an eager field initializer, so an enum nobody ever calls Values/AsSpan on pays nothing.
-    /// A stable field (rather than rebuilding the array on every access) is also what lets AsSpan create a
-    /// genuine, zero-copy span over it - see AppendCachedInlineValuesAndSpan.
+    /// Values and AsSpan for the chosen ValuesType. A span over constant elements is static data in the assembly. When
+    /// that needs RuntimeHelpers.CreateSpan (.NET 7+, for anything wider than a byte), the span members sit under #if,
+    /// so the same generated file still compiles, without them, on older targets.
     /// </summary>
-    private static void AppendLazyInlineValuesField(CodeWriter.BracedWriter writer, EnumModel model, EnumMemberModel[] members, string arrayType)
+    private static void AppendValuesAndAsSpan(CodeWriter.BracedWriter writer, EnumModel model, EnumMemberModel[] members, string arrayType, string valuesInitializer, bool spanNeedsCreateSpan)
     {
-        writer.AppendLine($"private static {arrayType} s_values;");
-        writer.AppendLine("private static volatile bool s_valuesInitialized;");
-        using (var methodWriter = writer.StartBraced($"private static void Ensure{model.GeneratedName}Values()"))
+        var spanType = $"global::System.ReadOnlySpan<{model.FullyQualifiedName}>";
+        switch (model.ValuesType)
         {
-            using (var ifWriter = methodWriter.StartBraced("if (!s_valuesInitialized)"))
-            {
-                ifWriter.AppendLine($"s_values = Create{model.GeneratedName}Values();");
-                ifWriter.AppendLine("s_valuesInitialized = true;");
-            }
-        }
-        using (var methodWriter = writer.StartBraced($"private static {arrayType} Create{model.GeneratedName}Values()"))
-        {
-            methodWriter.AppendLine($"{arrayType} values = default;");
-            for (var index = 0; index < members.Length; index++)
-            {
-                methodWriter.AppendLine($"values[{index}] = {EnumTypeAlias}.{members[index].Name};");
-            }
-            methodWriter.AppendLine("return values;");
+            case FancyEnumValuesType.StaticCollection:
+                // IReadOnlyList<T> rather than T[], so callers can't mutate the shared array. An array implements it
+                // natively, so there's no wrapper object.
+                AppendDoc(writer, $"{ValuesDocPrefix}, as a read-only list over an array created once and cached in a static field.");
+                writer.AppendLine($"public static global::System.Collections.Generic.IReadOnlyList<{model.FullyQualifiedName}> Values => s_values;");
+                AppendDoc(writer, "The same members as <c>Values</c>, as a read-only span over the cached array: no copy, no allocation.");
+                writer.AppendLine($"public static {spanType} AsSpan => s_values;");
+                break;
+            case FancyEnumValuesType.InlineArray:
+                if (!model.NoInlineArray)
+                {
+                    writer.AppendLine("#if NET8_0_OR_GREATER");
+                    AppendFreshInlineValues(writer, model, members, arrayType);
+                    writer.AppendLine("#endif");
+                }
+                AppendStaticDataSpan(writer, "AsSpan", $"The same members as <c>Values</c>, as a read-only span over static data in the assembly: no copy, no allocation. {SpanLimitationsDoc}", spanType, valuesInitializer, spanNeedsCreateSpan);
+                break;
+            default:
+                // Values is already the span, so there's no separate AsSpan.
+                AppendStaticDataSpan(writer, "Values", $"{ValuesDocPrefix}, as a read-only span over static data in the assembly: no copy, no allocation. {SpanLimitationsDoc} Set <c>ValuesType</c> to <c>InlineArray</c> or <c>StaticCollection</c> for a storable collection.", spanType, valuesInitializer, spanNeedsCreateSpan);
+                break;
         }
     }
 
-    /// <summary>Values/AsSpan for the CreateStaticReadonlyCollection + .NET 8+ case: both trigger the lazy ensure, then AsSpan reinterprets the now-populated static field's storage directly (never a by-value copy - see FancyEnumSourceGenerator.Emit.cs comments elsewhere on why that matters for correctness).</summary>
-    private static void AppendCachedInlineValuesAndSpan(CodeWriter.BracedWriter writer, EnumModel model, string arrayType, int length)
+    private static void AppendStaticDataSpan(CodeWriter.BracedWriter writer, string name, string doc, string spanType, string valuesInitializer, bool needsCreateSpan)
     {
-        AppendDoc(writer, $"{ValuesDocPrefix}, cached in a static field on first access. Returned by value, so the caller gets its own copy of the inline buffer.");
-        using (var propertyWriter = writer.StartBraced($"public static {arrayType} Values"))
+        if (needsCreateSpan)
         {
-            using (var getterWriter = propertyWriter.StartBraced("get"))
-            {
-                getterWriter.AppendLine($"Ensure{model.GeneratedName}Values();");
-                getterWriter.AppendLine("return s_values;");
-            }
+            writer.AppendLine("#if NET7_0_OR_GREATER");
         }
-        AppendDoc(writer, AsSpanDoc);
-        using (var propertyWriter = writer.StartBraced($"public static global::System.ReadOnlySpan<{model.FullyQualifiedName}> AsSpan"))
+        AppendDoc(writer, doc);
+        writer.AppendLine($"public static {spanType} {name} => [{valuesInitializer}];");
+        if (needsCreateSpan)
         {
-            using (var getterWriter = propertyWriter.StartBraced("get"))
-            {
-                getterWriter.AppendLine($"Ensure{model.GeneratedName}Values();");
-                getterWriter.AppendLine($"return global::System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref global::System.Runtime.CompilerServices.Unsafe.As<{arrayType}, {model.FullyQualifiedName}>(ref global::System.Runtime.CompilerServices.Unsafe.AsRef(in s_values)), {length});");
-            }
+            writer.AppendLine("#endif");
         }
     }
 
-    /// <summary>Values for the default (CreateStaticReadonlyCollection = false) .NET 8+ case: built fresh on every access - no static field, so no AsSpan either (there is nothing stable to point a span at).</summary>
+    /// <summary>Values for ValuesType = InlineArray: a fresh copy on every access, so there's no static storage, and the caller can store it or keep it across an await.</summary>
     private static void AppendFreshInlineValues(CodeWriter.BracedWriter writer, EnumModel model, EnumMemberModel[] members, string arrayType)
     {
-        AppendDoc(writer, $"{ValuesDocPrefix}. Built fresh on each access as an inline value-type buffer, so there's no heap allocation and no static storage; set <c>CreateStaticReadonlyCollection</c> for a cached copy plus <c>AsSpan</c>.");
+        AppendDoc(writer, $"{ValuesDocPrefix}, as a fresh copy in an inline value-type buffer: no heap allocation and no static storage, and unlike <c>AsSpan</c> it can be stored or kept across an <c>await</c>. Each access copies every member.");
         using (var propertyWriter = writer.StartBraced($"public static {arrayType} Values"))
         {
             using (var getterWriter = propertyWriter.StartBraced("get"))
@@ -1058,6 +1018,29 @@ public sealed partial class FancyEnumSourceGenerator
                 }
                 getterWriter.AppendLine("return values;");
             }
+        }
+    }
+
+    /// <summary>
+    /// HENUM017: an explicitly chosen ValuesType that can't be generated here. A warning rather than an error, so a
+    /// multi-targeted project still builds its other targets; the default (Span) is left out silently, as before.
+    /// </summary>
+    private static void AppendValuesTypeDiagnostics(EnumModel model, TargetFeatures target, bool hasValues, bool spanNeedsCreateSpan, List<DiagnosticInfo> diagnostics)
+    {
+        if (!model.ValuesTypeIsExplicit || !hasValues)
+        {
+            return;
+        }
+        var reason = model.ValuesType switch
+        {
+            FancyEnumValuesType.Span when spanNeedsCreateSpan && !target.HasCreateSpan => $"a span of '{model.UnderlyingType}' values only compiles to static data on .NET 7+ (older targets support it for 1-byte enums only)",
+            FancyEnumValuesType.InlineArray when model.NoInlineArray => "NoInlineArray is also set",
+            FancyEnumValuesType.InlineArray when !target.HasInlineArray => "inline arrays need .NET 8+",
+            _ => null
+        };
+        if (reason is not null)
+        {
+            diagnostics.Add(DiagnosticInfo.Create(EnumGeneratorDiagnostics.ValuesTypeUnavailable, model.Location, model.FullyQualifiedName, model.ValuesType.ToString(), reason));
         }
     }
 

@@ -5,16 +5,6 @@ using thisEnum = global::Widget;
 using CharSpan = global::System.ReadOnlySpan<char>;
 using StringComparison = global::System.StringComparison;
 using static global::System.MemoryExtensions;
-#if NET8_0_OR_GREATER
-using InlineArray = global::System.Runtime.CompilerServices.InlineArrayAttribute;
-#endif
-#if NET8_0_OR_GREATER
-/// <summary>A fixed-size inline buffer of 3 <see cref="global::Widget"/> values, as returned by <c>Values</c>/<c>ListFlagMembers</c>: a value type, so no heap allocation. Index it, <c>foreach</c> over it, or convert it to a span.</summary>
-[InlineArray(3)]
-public struct WidgetArray {
-	private global::Widget _element0;
-}
-#endif
 /// <summary>FancyEnum-generated extension members, and compile-time constants, for <see cref="global::Widget"/>.</summary>
 public static partial class WidgetFancyEnumExtensions {
 	extension(global::Widget value) {
@@ -147,18 +137,9 @@ public static partial class WidgetFancyEnumExtensions {
 		/// <param name="input">The text to parse.</param>
 		/// <param name="ignoreCase">Whether to ignore ASCII case.</param>
 		public static global::Widget ParseOrUnknown(CharSpan input, bool ignoreCase) => thisEnum.TryParseFancy(input, ignoreCase, out var result) ? result : thisEnum.Unknown;
-		#if NET8_0_OR_GREATER
-		/// <summary>Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order. Built fresh on each access as an inline value-type buffer, so there's no heap allocation and no static storage; set <c>CreateStaticReadonlyCollection</c> for a cached copy plus <c>AsSpan</c>.</summary>
-		public static WidgetArray Values {
-			get {
-				WidgetArray values = default;
-				values[0] = thisEnum.Sprocket;
-				values[1] = thisEnum.Cog;
-				values[2] = thisEnum.Gear;
-				return values;
-			}
-			
-		}
+		#if NET7_0_OR_GREATER
+		/// <summary>Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order, as a read-only span over static data in the assembly: no copy, no allocation. A ref struct, so it can't be stored in a field or kept across an <c>await</c>. Set <c>ValuesType</c> to <c>InlineArray</c> or <c>StaticCollection</c> for a storable collection.</summary>
+		public static global::System.ReadOnlySpan<global::Widget> Values => [thisEnum.Sprocket, thisEnum.Cog, thisEnum.Gear];
 		#endif
 	}
 	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once). A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>

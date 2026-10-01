@@ -25,10 +25,10 @@ public class IsDefinedBenchmarks
 }
 
 /// <summary>
-/// Enumerating every member (summing the values, so the loop can't be elided). The BCL and NetEscapades both return a
-/// new array per call; on .NET 10 the JIT can stack-allocate NetEscapades' array here, because once inlined it never
-/// escapes this loop, but code that stores or passes the array on still pays for it. FancyEnum's Values/AsSpan exclude
-/// the Unknown member, so it walks 24 members where the others walk 25.
+/// Enumerating every member (summing the values, so the loop can't be elided), once per FancyEnum ValuesType. The BCL
+/// and NetEscapades both return a new array per call; on .NET 10 the JIT can stack-allocate NetEscapades' array here,
+/// because once inlined it never escapes this loop, but code that stores or passes the array on still pays for it.
+/// FancyEnum's Values/AsSpan exclude the Unknown member, so it walks 24 members where the others walk 25.
 /// </summary>
 [Config(typeof(BenchmarkConfig))]
 public class ValuesBenchmarks
@@ -44,8 +44,9 @@ public class ValuesBenchmarks
         return sum;
     }
 
+    /// <summary>The default: a span over static data in the assembly.</summary>
     [Benchmark]
-    public int FancyEnum_Values()
+    public int FancyEnum_Span()
     {
         var sum = 0;
         foreach (var value in Medium.Values)
@@ -55,11 +56,36 @@ public class ValuesBenchmarks
         return sum;
     }
 
+    /// <summary>A fresh inline-array copy per call, which can be stored or kept across an await.</summary>
     [Benchmark]
-    public int FancyEnum_AsSpan()
+    public int FancyEnum_InlineArray()
     {
         var sum = 0;
-        foreach (var value in Medium.AsSpan)
+        foreach (var value in MediumInline.Values)
+        {
+            sum += (int)value;
+        }
+        return sum;
+    }
+
+    /// <summary>The cached IReadOnlyList, enumerated through the interface.</summary>
+    [Benchmark]
+    public int FancyEnum_StaticCollection()
+    {
+        var sum = 0;
+        foreach (var value in MediumCached.Values)
+        {
+            sum += (int)value;
+        }
+        return sum;
+    }
+
+    /// <summary>The span over the cached array that StaticCollection also generates.</summary>
+    [Benchmark]
+    public int FancyEnum_StaticCollection_AsSpan()
+    {
+        var sum = 0;
+        foreach (var value in MediumCached.AsSpan)
         {
             sum += (int)value;
         }

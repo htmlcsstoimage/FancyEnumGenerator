@@ -2,10 +2,10 @@
 // See Generated/.../Beverage.FancyEnum.g.cs.
 using FancyEnumGenerator.Attributes;
 
-// CreateStaticReadonlyCollection = true: opts into a cached Values/AsSpan pair (built once, lazily, on
-// first access) instead of the default (Values freshly built on every access, no AsSpan at all - see
-// Fruit in BasicUsage.cs for that default).
-[FancyEnum(CreateStaticReadonlyCollection = true)]
+// ValuesType = StaticCollection: Values is an IReadOnlyList over an array created once and cached, so it can be
+// stored or kept across an await, plus AsSpan over the same array. The default (see Fruit in BasicUsage.cs) is a
+// ReadOnlySpan over static data instead.
+[FancyEnum(ValuesType = FancyEnumValuesType.StaticCollection)]
 [FancyEnumMemberMappingSettings("Label", NotDefined = FancyEnumMemberFallbackOption.NameOfLower)]
 [FancyEnumMemberMappingSettings<int>("SortOrder", NotDefined = -1)]
 public enum Beverage

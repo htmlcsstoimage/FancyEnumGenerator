@@ -36,7 +36,7 @@ if (resultsDirectory is null || !Directory.Exists(resultsDirectory))
     ("IsDefinedBenchmarks", "Is a value declared?",
         "For a contiguous and a sparse enum. FancyEnum's check is `!IsUnknown`."),
     ("ValuesBenchmarks", "Enumerating every member",
-        "Summing every member's value. FancyEnum's `Values`/`AsSpan` leave out `Unknown`, so they walk 24 members where the others walk 25. NetEscapades' `GetValues()` returns a new array per call, which .NET 10's JIT can stack-allocate here because the array never leaves the loop."),
+        "Summing every member's value, once for each FancyEnum `ValuesType`: the default `Span`, `InlineArray` (a storable copy) and `StaticCollection` (a cached `IReadOnlyList`, also through its `AsSpan`). FancyEnum leaves out `Unknown`, so it walks 24 members where the others walk 25. NetEscapades' `GetValues()` returns a new array per call, which .NET 10's JIT can stack-allocate here because the array never leaves the loop."),
     ("TryFormatBenchmarks", "Formatting into a buffer",
         "`TryFormat` into a caller-supplied `Span<char>`."),
 ];
