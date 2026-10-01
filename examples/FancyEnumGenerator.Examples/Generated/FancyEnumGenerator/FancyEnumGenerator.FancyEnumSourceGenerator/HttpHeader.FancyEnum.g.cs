@@ -6,16 +6,6 @@ using CharSpan = global::System.ReadOnlySpan<char>;
 using ByteSpan = global::System.ReadOnlySpan<byte>;
 using StringComparison = global::System.StringComparison;
 using static global::System.MemoryExtensions;
-#if NET8_0_OR_GREATER
-using InlineArray = global::System.Runtime.CompilerServices.InlineArrayAttribute;
-#endif
-#if NET8_0_OR_GREATER
-/// <summary>A fixed-size inline buffer of 89 <see cref="global::HttpHeader"/> values, as returned by <c>Values</c>/<c>ListFlagMembers</c>: a value type, so no heap allocation. Index it, <c>foreach</c> over it, or convert it to a span.</summary>
-[InlineArray(89)]
-public struct HttpHeaderArray {
-	private global::HttpHeader _element0;
-}
-#endif
 /// <summary>FancyEnum-generated extension members, and compile-time constants, for <see cref="global::HttpHeader"/>.</summary>
 public static partial class HttpHeaderFancyEnumExtensions {
 	extension(global::HttpHeader value) {
@@ -2029,104 +2019,9 @@ public static partial class HttpHeaderFancyEnumExtensions {
 		/// <param name="input">The UTF-8 bytes to parse.</param>
 		/// <param name="ignoreCase">Whether to ignore ASCII case.</param>
 		public static global::HttpHeader ParseOrUnknown(ByteSpan input, bool ignoreCase) => thisEnum.TryParseFancy(input, ignoreCase, out var result) ? result : thisEnum.Unknown;
-		#if NET8_0_OR_GREATER
-		/// <summary>Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order. Built fresh on each access as an inline value-type buffer, so there's no heap allocation and no static storage; set <c>CreateStaticReadonlyCollection</c> for a cached copy plus <c>AsSpan</c>.</summary>
-		public static HttpHeaderArray Values {
-			get {
-				HttpHeaderArray values = default;
-				values[0] = thisEnum.Accept;
-				values[1] = thisEnum.AcceptCharset;
-				values[2] = thisEnum.AcceptEncoding;
-				values[3] = thisEnum.AcceptLanguage;
-				values[4] = thisEnum.AcceptRanges;
-				values[5] = thisEnum.AccessControlAllowCredentials;
-				values[6] = thisEnum.AccessControlAllowHeaders;
-				values[7] = thisEnum.AccessControlAllowMethods;
-				values[8] = thisEnum.AccessControlAllowOrigin;
-				values[9] = thisEnum.AccessControlExposeHeaders;
-				values[10] = thisEnum.AccessControlMaxAge;
-				values[11] = thisEnum.AccessControlRequestHeaders;
-				values[12] = thisEnum.AccessControlRequestMethod;
-				values[13] = thisEnum.Age;
-				values[14] = thisEnum.Allow;
-				values[15] = thisEnum.AltSvc;
-				values[16] = thisEnum.Authorization;
-				values[17] = thisEnum.CacheControl;
-				values[18] = thisEnum.ClearSiteData;
-				values[19] = thisEnum.Connection;
-				values[20] = thisEnum.ContentDisposition;
-				values[21] = thisEnum.ContentEncoding;
-				values[22] = thisEnum.ContentLanguage;
-				values[23] = thisEnum.ContentLength;
-				values[24] = thisEnum.ContentLocation;
-				values[25] = thisEnum.ContentRange;
-				values[26] = thisEnum.ContentSecurityPolicy;
-				values[27] = thisEnum.ContentSecurityPolicyReportOnly;
-				values[28] = thisEnum.ContentType;
-				values[29] = thisEnum.Cookie;
-				values[30] = thisEnum.CrossOriginEmbedderPolicy;
-				values[31] = thisEnum.CrossOriginOpenerPolicy;
-				values[32] = thisEnum.CrossOriginResourcePolicy;
-				values[33] = thisEnum.Date;
-				values[34] = thisEnum.ETag;
-				values[35] = thisEnum.Expect;
-				values[36] = thisEnum.Expires;
-				values[37] = thisEnum.Forwarded;
-				values[38] = thisEnum.From;
-				values[39] = thisEnum.Host;
-				values[40] = thisEnum.IfMatch;
-				values[41] = thisEnum.IfModifiedSince;
-				values[42] = thisEnum.IfNoneMatch;
-				values[43] = thisEnum.IfRange;
-				values[44] = thisEnum.IfUnmodifiedSince;
-				values[45] = thisEnum.KeepAlive;
-				values[46] = thisEnum.LastModified;
-				values[47] = thisEnum.Link;
-				values[48] = thisEnum.Location;
-				values[49] = thisEnum.MaxForwards;
-				values[50] = thisEnum.Origin;
-				values[51] = thisEnum.PermissionsPolicy;
-				values[52] = thisEnum.Pragma;
-				values[53] = thisEnum.Priority;
-				values[54] = thisEnum.ProxyAuthenticate;
-				values[55] = thisEnum.ProxyAuthorization;
-				values[56] = thisEnum.Range;
-				values[57] = thisEnum.Referer;
-				values[58] = thisEnum.ReferrerPolicy;
-				values[59] = thisEnum.RetryAfter;
-				values[60] = thisEnum.SecFetchDest;
-				values[61] = thisEnum.SecFetchMode;
-				values[62] = thisEnum.SecFetchSite;
-				values[63] = thisEnum.SecFetchUser;
-				values[64] = thisEnum.SecWebSocketAccept;
-				values[65] = thisEnum.SecWebSocketExtensions;
-				values[66] = thisEnum.SecWebSocketKey;
-				values[67] = thisEnum.SecWebSocketProtocol;
-				values[68] = thisEnum.SecWebSocketVersion;
-				values[69] = thisEnum.Server;
-				values[70] = thisEnum.ServerTiming;
-				values[71] = thisEnum.SetCookie;
-				values[72] = thisEnum.StrictTransportSecurity;
-				values[73] = thisEnum.Te;
-				values[74] = thisEnum.TimingAllowOrigin;
-				values[75] = thisEnum.Trailer;
-				values[76] = thisEnum.TransferEncoding;
-				values[77] = thisEnum.Upgrade;
-				values[78] = thisEnum.UpgradeInsecureRequests;
-				values[79] = thisEnum.UserAgent;
-				values[80] = thisEnum.Vary;
-				values[81] = thisEnum.Via;
-				values[82] = thisEnum.WwwAuthenticate;
-				values[83] = thisEnum.XContentTypeOptions;
-				values[84] = thisEnum.XForwardedFor;
-				values[85] = thisEnum.XForwardedHost;
-				values[86] = thisEnum.XForwardedProto;
-				values[87] = thisEnum.XFrameOptions;
-				values[88] = thisEnum.XRequestId;
-				return values;
-			}
-			
-		}
+		#if NET7_0_OR_GREATER
+		/// <summary>Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order, as a read-only span over static data in the assembly: no copy, no allocation. A ref struct, so it can't be stored in a field or kept across an <c>await</c>. Set <c>ValuesType</c> to <c>InlineArray</c> or <c>StaticCollection</c> for a storable collection.</summary>
+		public static global::System.ReadOnlySpan<global::HttpHeader> Values => [thisEnum.Accept, thisEnum.AcceptCharset, thisEnum.AcceptEncoding, thisEnum.AcceptLanguage, thisEnum.AcceptRanges, thisEnum.AccessControlAllowCredentials, thisEnum.AccessControlAllowHeaders, thisEnum.AccessControlAllowMethods, thisEnum.AccessControlAllowOrigin, thisEnum.AccessControlExposeHeaders, thisEnum.AccessControlMaxAge, thisEnum.AccessControlRequestHeaders, thisEnum.AccessControlRequestMethod, thisEnum.Age, thisEnum.Allow, thisEnum.AltSvc, thisEnum.Authorization, thisEnum.CacheControl, thisEnum.ClearSiteData, thisEnum.Connection, thisEnum.ContentDisposition, thisEnum.ContentEncoding, thisEnum.ContentLanguage, thisEnum.ContentLength, thisEnum.ContentLocation, thisEnum.ContentRange, thisEnum.ContentSecurityPolicy, thisEnum.ContentSecurityPolicyReportOnly, thisEnum.ContentType, thisEnum.Cookie, thisEnum.CrossOriginEmbedderPolicy, thisEnum.CrossOriginOpenerPolicy, thisEnum.CrossOriginResourcePolicy, thisEnum.Date, thisEnum.ETag, thisEnum.Expect, thisEnum.Expires, thisEnum.Forwarded, thisEnum.From, thisEnum.Host, thisEnum.IfMatch, thisEnum.IfModifiedSince, thisEnum.IfNoneMatch, thisEnum.IfRange, thisEnum.IfUnmodifiedSince, thisEnum.KeepAlive, thisEnum.LastModified, thisEnum.Link, thisEnum.Location, thisEnum.MaxForwards, thisEnum.Origin, thisEnum.PermissionsPolicy, thisEnum.Pragma, thisEnum.Priority, thisEnum.ProxyAuthenticate, thisEnum.ProxyAuthorization, thisEnum.Range, thisEnum.Referer, thisEnum.ReferrerPolicy, thisEnum.RetryAfter, thisEnum.SecFetchDest, thisEnum.SecFetchMode, thisEnum.SecFetchSite, thisEnum.SecFetchUser, thisEnum.SecWebSocketAccept, thisEnum.SecWebSocketExtensions, thisEnum.SecWebSocketKey, thisEnum.SecWebSocketProtocol, thisEnum.SecWebSocketVersion, thisEnum.Server, thisEnum.ServerTiming, thisEnum.SetCookie, thisEnum.StrictTransportSecurity, thisEnum.Te, thisEnum.TimingAllowOrigin, thisEnum.Trailer, thisEnum.TransferEncoding, thisEnum.Upgrade, thisEnum.UpgradeInsecureRequests, thisEnum.UserAgent, thisEnum.Vary, thisEnum.Via, thisEnum.WwwAuthenticate, thisEnum.XContentTypeOptions, thisEnum.XForwardedFor, thisEnum.XForwardedHost, thisEnum.XForwardedProto, thisEnum.XFrameOptions, thisEnum.XRequestId];
 		#endif
 	}
 	private static bool TryParseFancy__Exact4(CharSpan input, out global::HttpHeader result) {

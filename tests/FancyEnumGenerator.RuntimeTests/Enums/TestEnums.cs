@@ -139,11 +139,17 @@ public enum ByUpper { Unknown, FirstOne, SecondOne }
 [FancyEnum(DefaultToStringBehavior = FancyEnumDefaultToStringBehavior.CustomFieldRequired, DefaultToStringCustomField = "Code")]
 public enum ByRequiredField { [FancyEnumMember("Code", "?")] Unknown, [FancyEnumMember("Code", "F1")] First, [FancyEnumMember("Code", "S2")] Second }
 
-[FancyEnum(CreateStaticReadonlyCollection = true)]
+[FancyEnum(ValuesType = FancyEnumValuesType.StaticCollection)]
 public enum Cached { Unknown, A, B, [FancyEnumMemberSettings(ExcludeFromValues = true)] Hidden, C }
 
-[FancyEnum(NoInlineArray = true, CreateStaticReadonlyCollection = true)]
+[FancyEnum(NoInlineArray = true, ValuesType = FancyEnumValuesType.StaticCollection)]
 public enum PlainArray { Unknown, A, B }
+
+[FancyEnum]
+public enum Spanned : long { Unknown, A, B, [FancyEnumMemberSettings(ExcludeFromValues = true)] Hidden, C }
+
+[FancyEnum(ValuesType = FancyEnumValuesType.InlineArray)]
+public enum Inline { Unknown, A, B, [FancyEnumMemberSettings(ExcludeFromValues = true)] Hidden, C }
 
 /// <summary>Enough same-length and long tokens to exercise every parser strategy (see the generator's Parsing scenario).</summary>
 [FancyEnum(CreateByteParsing = true, CreateTryFormat = true, CreateIsValidPrefix = true, ParseCaseSensitive = false)]

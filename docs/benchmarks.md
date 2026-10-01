@@ -191,7 +191,7 @@ Apple M1 Max, 1 CPU, 10 logical and 10 physical cores
 
 ## Enumerating every member
 
-Summing every member's value. FancyEnum's `Values`/`AsSpan` leave out `Unknown`, so they walk 24 members where the others walk 25. NetEscapades' `GetValues()` returns a new array per call, which .NET 10's JIT can stack-allocate here because the array never leaves the loop.
+Summing every member's value, once for each FancyEnum `ValuesType`: the default `Span`, `InlineArray` (a storable copy) and `StaticCollection` (a cached `IReadOnlyList`, also through its `AsSpan`). FancyEnum leaves out `Unknown`, so it walks 24 members where the others walk 25. NetEscapades' `GetValues()` returns a new array per call, which .NET 10's JIT can stack-allocate here because the array never leaves the loop.
 
 ```
 
@@ -203,12 +203,14 @@ Apple M1 Max, 1 CPU, 10 logical and 10 physical cores
 
 
 ```
-| Method           | Mean      | Error     | StdDev    | Ratio | Allocated | Alloc Ratio |
-|----------------- |----------:|----------:|----------:|------:|----------:|------------:|
-| Bcl              | 30.476 ns | 0.6104 ns | 0.5994 ns |  1.00 |     128 B |        1.00 |
-| FancyEnum_Values |  9.668 ns | 0.1438 ns | 0.1345 ns |  0.32 |         - |        0.00 |
-| FancyEnum_AsSpan |  8.861 ns | 0.1153 ns | 0.1079 ns |  0.29 |         - |        0.00 |
-| NetEscapades     |  9.479 ns | 0.0944 ns | 0.0837 ns |  0.31 |         - |        0.00 |
+| Method                            | Mean      | Error     | StdDev    | Ratio | Allocated | Alloc Ratio |
+|---------------------------------- |----------:|----------:|----------:|------:|----------:|------------:|
+| Bcl                               | 32.179 ns | 0.6662 ns | 1.0946 ns |  1.00 |     128 B |        1.00 |
+| FancyEnum_Span                    |  8.645 ns | 0.1238 ns | 0.0967 ns |  0.27 |         - |        0.00 |
+| FancyEnum_InlineArray             |  9.247 ns | 0.0632 ns | 0.0528 ns |  0.29 |         - |        0.00 |
+| FancyEnum_StaticCollection        |  8.577 ns | 0.1220 ns | 0.1141 ns |  0.27 |         - |        0.00 |
+| FancyEnum_StaticCollection_AsSpan |  8.571 ns | 0.1135 ns | 0.1062 ns |  0.27 |         - |        0.00 |
+| NetEscapades                      |  9.594 ns | 0.1027 ns | 0.0910 ns |  0.30 |         - |        0.00 |
 
 ## Formatting into a buffer
 

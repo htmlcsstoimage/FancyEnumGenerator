@@ -15,6 +15,18 @@ public enum Fruit
     Banana = 2,
 }
 
+/// <summary>A 1-byte enum: its default <c>Values</c> span is static data on every target, .NET Framework included.</summary>
+[FancyEnum]
+public enum Size : byte
+{
+    /// <summary>Unknown.</summary>
+    Unknown = 0,
+    /// <summary>Small.</summary>
+    Small = 1,
+    /// <summary>Large.</summary>
+    Large = 2,
+}
+
 /// <summary>Flags, formatted as combinations.</summary>
 [Flags]
 [FancyEnum(AllowNoUnknown = true, CreateTryFormat = true)]
@@ -34,7 +46,7 @@ public enum Permission
 /// Enough names of one length (5 and 17 characters) that text parsing uses per-length helpers and UTF-8 parsing uses
 /// packed-ASCII switches, with every other option on.
 /// </summary>
-[FancyEnum(CreateByteParsing = true, CreateTryFormat = true, CreateStaticReadonlyCollection = true, CreateIsValidPrefix = true, ParseCaseSensitive = false)]
+[FancyEnum(CreateByteParsing = true, CreateTryFormat = true, ValuesType = FancyEnumValuesType.StaticCollection, CreateIsValidPrefix = true, ParseCaseSensitive = false)]
 [FancyEnumMemberMappingSettings("Code", IncludeUtf8Value = true, ParseFrom = true, CreateTryFormat = true)]
 public enum Region
 {

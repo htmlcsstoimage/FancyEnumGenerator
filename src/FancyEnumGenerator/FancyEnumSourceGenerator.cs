@@ -98,7 +98,9 @@ public sealed partial class FancyEnumSourceGenerator : IIncrementalGenerator
             .Combine(configOptions.Combine(wellKnownTypes).Combine(knownShapes))
             .Select(static (pair, _) => Extract((INamedTypeSymbol)pair.Left.TargetSymbol, pair.Left.Attributes[0], pair.Right.Left.Left, pair.Right.Left.Right, pair.Right.Right));
 
-        context.RegisterSourceOutput(models.Select(static (model, _) => Emit(model)), static (sourceContext, result) => WriteResult(sourceContext, result));
+        // Only HENUM017 needs to know the target: the generated code itself stays target-independent, with #if blocks.
+        var targetFeatures = context.ParseOptionsProvider.Select(static (options, _) => TargetFeatures.From(options.PreprocessorSymbolNames));
+        context.RegisterSourceOutput(models.Combine(targetFeatures).Select(static (pair, _) => Emit(pair.Left, pair.Right)), static (sourceContext, result) => WriteResult(sourceContext, result));
     }
 
     private static void WriteResult(SourceProductionContext sourceContext, GenResult result)
@@ -351,7 +353,9 @@ public sealed partial class FancyEnumSourceGenerator : IIncrementalGenerator
             UnderlyingType = underlyingType,
             Accessibility = symbol.DeclaredAccessibility == Accessibility.Public && containingTypes.All(static containingType => containingType.DeclaredAccessibility == Accessibility.Public) ? "public" : "internal",
             NoInlineArray = ResolveBoolOption(enumAttribute, assemblyDefaults, globalOptions, nameof(FancyEnumAttribute.NoInlineArray), false),
-            CreateStaticReadonlyCollection = ResolveBoolOption(enumAttribute, assemblyDefaults, globalOptions, nameof(FancyEnumAttribute.CreateStaticReadonlyCollection), false),
+            ValuesType = ResolveEnumOption(enumAttribute, assemblyDefaults, globalOptions, nameof(FancyEnumAttribute.ValuesType), default(FancyEnumValuesType), out var valuesTypeIsExplicit),
+            ValuesTypeIsExplicit = valuesTypeIsExplicit,
+            Location = GeneratorLocationInfo.FromLocation(symbol.Locations.FirstOrDefault()),
             AllowNonContiguous = allowNonContiguous,
             AllowNoUnknown = allowNoUnknown,
             IncludeObsolete = includeObsolete,
@@ -464,8 +468,13 @@ public sealed partial class FancyEnumSourceGenerator : IIncrementalGenerator
 
     /// <summary>Same precedence as <see cref="ResolveBoolOption"/>, for enum-valued options.</summary>
     private static TEnum ResolveEnumOption<TEnum>(AttributeData? perEnumAttribute, AttributeData? assemblyDefaults, AnalyzerConfigOptions globalOptions, string propertyName, TEnum hardcodedFallback)
+        where TEnum : struct, Enum => ResolveEnumOption(perEnumAttribute, assemblyDefaults, globalOptions, propertyName, hardcodedFallback, out _);
+
+    /// <summary>Like the overload above, and also reports whether any source set the option (otherwise it's the library default).</summary>
+    private static TEnum ResolveEnumOption<TEnum>(AttributeData? perEnumAttribute, AttributeData? assemblyDefaults, AnalyzerConfigOptions globalOptions, string propertyName, TEnum hardcodedFallback, out bool isExplicit)
         where TEnum : struct, Enum
     {
+        isExplicit = true;
         if (perEnumAttribute.TryReadNamedEnum<TEnum>(propertyName, out var perEnumValue))
         {
             return perEnumValue;
@@ -478,6 +487,7 @@ public sealed partial class FancyEnumSourceGenerator : IIncrementalGenerator
         {
             return msBuildValue;
         }
+        isExplicit = false;
         return hardcodedFallback;
     }
 

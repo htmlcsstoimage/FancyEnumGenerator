@@ -4,11 +4,10 @@ Console.WriteLine($"Fruit.TryParseFancy(\"Banana\", ...): {Fruit.TryParseFancy("
 Console.WriteLine($"Fruit.Apple.IsUnknown: {Fruit.Apple.IsUnknown}");
 Console.WriteLine($"Fruit.Unknown.IsUnknown: {Fruit.Unknown.IsUnknown}");
 
-// Fruit uses the default (CreateStaticReadonlyCollection = false): Values is freshly built on every
-// access (cheap - a value-type copy, not a heap allocation) and there is no AsSpan at all, since a
-// freshly-built value has no stable backing store for a span to safely point at.
+// Fruit uses the default ValuesType (Span): Values is a ReadOnlySpan over static data in the assembly, so there's no
+// allocation and no copy. Being a span, it can't be stored in a field or kept across an await.
 var fruitValues = Fruit.Values;
-Console.WriteLine($"Fruit.Values.GetType(): {fruitValues.GetType().Name} (the inline-array struct, freshly built)");
+Console.WriteLine($"Fruit.Values.Length: {fruitValues.Length} (a ReadOnlySpan over static data)");
 Console.WriteLine($"Fruit.Values contents: {fruitValues[0]}, {fruitValues[1]}, {fruitValues[2]}");
 
 Console.WriteLine();
@@ -19,9 +18,8 @@ Console.WriteLine($"Beverage.Tea.SortOrder: {Beverage.Tea.SortOrder} (value {(in
 Console.WriteLine($"Beverage.Juice.Label (fallback, NameOfLower): {Beverage.Juice.Label}");
 Console.WriteLine($"Beverage.Juice.SortOrder (fallback, NotDefined=-1): {Beverage.Juice.SortOrder}");
 
-// Beverage sets CreateStaticReadonlyCollection = true: Values/AsSpan are backed by the same lazily-built
-// static storage. Verify the Unsafe.As/MemoryMarshal reinterpretation is actually correct at runtime
-// (matches Values element-by-element), not just that it compiles.
+// Beverage sets ValuesType = StaticCollection: Values is an IReadOnlyList over a cached array, and AsSpan is a span
+// over that same array.
 var beverageValues = Beverage.Values;
 ReadOnlySpan<Beverage> beverageSpan = Beverage.AsSpan;
 Console.WriteLine($"Beverage.AsSpan.Length: {beverageSpan.Length}");

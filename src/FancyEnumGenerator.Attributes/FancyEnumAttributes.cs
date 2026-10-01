@@ -73,6 +73,32 @@ public enum FancyEnumDefaultToStringBehavior
     JsonStringEnumMemberNameAttribute
 }
 
+/// <summary>What the generated <c>Values</c> property returns. See <see cref="FancyEnumAttribute.ValuesType"/>.</summary>
+public enum FancyEnumValuesType
+{
+    /// <summary>
+    /// A <c>ReadOnlySpan&lt;T&gt;</c> over the members, which the compiler stores as static data in your assembly: no
+    /// allocation, no copy and no static field. It's a ref struct, so it can't be stored in a field or kept across an
+    /// <c>await</c>. Needs .NET 7+, except for enums with a 1-byte underlying type (<c>byte</c>, <c>sbyte</c>), which
+    /// get it on every target.
+    /// </summary>
+    Span,
+
+    /// <summary>
+    /// A fresh copy of the members in a generated <c>[InlineArray]</c> struct: no heap allocation, and an ordinary
+    /// value type you can store or keep across an <c>await</c>. Each access copies every member. Needs .NET 8+ and is
+    /// unavailable with <see cref="FancyEnumAttribute.NoInlineArray"/>.
+    /// </summary>
+    InlineArray,
+
+    /// <summary>
+    /// An <see cref="System.Collections.Generic.IReadOnlyList{T}"/> over an array created once and cached in a static
+    /// field: storable, no copy per access, and available on every target. Costs one small array for the lifetime of
+    /// the app.
+    /// </summary>
+    StaticCollection
+}
+
 /// <summary>
 /// Generates fast extension members for this enum: <c>ToStringFancy()</c>, <c>TryParseFancy</c>/<c>ParseOrUnknown</c>,
 /// <c>FromUnderlying</c>, <c>IsUnknown</c>, <c>Values</c>, flags helpers, and a property per field mapping declared
@@ -92,23 +118,20 @@ public enum FancyEnumDefaultToStringBehavior
 public sealed class FancyEnumAttribute : Attribute
 {
     /// <summary>
-    /// Don't generate the .NET 8+ <c>[InlineArray]</c> struct. <c>Values</c>/<c>AsSpan</c> are then only generated
-    /// when <see cref="CreateStaticReadonlyCollection"/> is also set (backed by a plain array), and flags enums lose
-    /// <c>ListFlagMembers</c>. Default: <see langword="false"/>.
+    /// What <c>Values</c> returns: a zero-copy span (<see cref="FancyEnumValuesType.Span"/>), a storable inline-array
+    /// copy (<see cref="FancyEnumValuesType.InlineArray"/>) or a cached <c>IReadOnlyList&lt;T&gt;</c>
+    /// (<see cref="FancyEnumValuesType.StaticCollection"/>). The last two also get <c>AsSpan</c>, a zero-copy
+    /// <c>ReadOnlySpan&lt;T&gt;</c> over the same members, wherever the target supports it. When the chosen type can't be generated
+    /// for the current target, <c>Values</c> is left out and an explicitly set value reports HENUM017.
+    /// Default: <see cref="FancyEnumValuesType.Span"/>.
     /// </summary>
-    public bool NoInlineArray { get; set; }
+    public FancyEnumValuesType ValuesType { get; set; }
 
     /// <summary>
-    /// Cache the member collection in a static field, built lazily on first access, and also generate <c>AsSpan</c>
-    /// (a zero-copy <c>ReadOnlySpan&lt;T&gt;</c> over it). Default: <see langword="false"/>, in which case
-    /// on .NET 8+ <c>Values</c> is built fresh on every access (a value-type copy, no heap allocation) and there is
-    /// no <c>AsSpan</c>; on older targets neither is generated.
+    /// Don't generate any .NET 8+ <c>[InlineArray]</c> struct: flags enums lose <c>ListFlagMembers</c>, and
+    /// <see cref="FancyEnumValuesType.InlineArray"/> isn't available (HENUM017). Default: <see langword="false"/>.
     /// </summary>
-    /// <remarks>
-    /// When the collection is a plain array (older targets, or <see cref="NoInlineArray"/>), <c>Values</c> is typed
-    /// <see cref="System.Collections.Generic.IReadOnlyList{T}"/> so callers can't mutate the shared storage.
-    /// </remarks>
-    public bool CreateStaticReadonlyCollection { get; set; }
+    public bool NoInlineArray { get; set; }
 
     /// <summary>
     /// Allow gaps between the enum's numeric values. Without this, non-contiguous values are a build error (HENUM002).
@@ -186,8 +209,8 @@ public sealed class FancyEnumDefaultsAttribute : Attribute
     /// <summary>Default for <see cref="FancyEnumAttribute.NoInlineArray"/>.</summary>
     public bool NoInlineArray { get; set; }
 
-    /// <summary>Default for <see cref="FancyEnumAttribute.CreateStaticReadonlyCollection"/>.</summary>
-    public bool CreateStaticReadonlyCollection { get; set; }
+    /// <summary>Default for <see cref="FancyEnumAttribute.ValuesType"/>.</summary>
+    public FancyEnumValuesType ValuesType { get; set; }
 
     /// <summary>Default for <see cref="FancyEnumAttribute.AllowNonContiguous"/>.</summary>
     public bool AllowNonContiguous { get; set; }

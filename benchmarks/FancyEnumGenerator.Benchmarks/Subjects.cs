@@ -20,7 +20,7 @@ public sealed class StationInfoAttribute : Attribute
     public int Order { get; set; }
 }
 
-[FancyEnum(CreateByteParsing = true, CreateTryFormat = true, CreateStaticReadonlyCollection = true)]
+[FancyEnum(CreateByteParsing = true, CreateTryFormat = true)]
 public enum Medium
 {
     Unknown = 0,
@@ -563,6 +563,66 @@ public enum MediumDescribed
     [Description("iron glacier")] IronGlacier = 22,
     [Description("quiet glacier")] QuietGlacier = 23,
     [Description("early valley")] EarlyValley = 24,
+}
+
+[FancyEnum(ValuesType = FancyEnumValuesType.InlineArray)]
+public enum MediumInline
+{
+    Unknown = 0,
+    AmberHarbor = 1,
+    IronHarbor = 2,
+    QuietHarbor = 3,
+    EarlyFalcon = 4,
+    MistyFalcon = 5,
+    AmberMeadow = 6,
+    IronMeadow = 7,
+    QuietMeadow = 8,
+    EarlySummit = 9,
+    MistySummit = 10,
+    AmberCanyon = 11,
+    IronCanyon = 12,
+    QuietCanyon = 13,
+    EarlyRiver = 14,
+    MistyRiver = 15,
+    AmberForest = 16,
+    IronForest = 17,
+    QuietForest = 18,
+    EarlyBeacon = 19,
+    MistyBeacon = 20,
+    AmberGlacier = 21,
+    IronGlacier = 22,
+    QuietGlacier = 23,
+    EarlyValley = 24,
+}
+
+[FancyEnum(ValuesType = FancyEnumValuesType.StaticCollection)]
+public enum MediumCached
+{
+    Unknown = 0,
+    AmberHarbor = 1,
+    IronHarbor = 2,
+    QuietHarbor = 3,
+    EarlyFalcon = 4,
+    MistyFalcon = 5,
+    AmberMeadow = 6,
+    IronMeadow = 7,
+    QuietMeadow = 8,
+    EarlySummit = 9,
+    MistySummit = 10,
+    AmberCanyon = 11,
+    IronCanyon = 12,
+    QuietCanyon = 13,
+    EarlyRiver = 14,
+    MistyRiver = 15,
+    AmberForest = 16,
+    IronForest = 17,
+    QuietForest = 18,
+    EarlyBeacon = 19,
+    MistyBeacon = 20,
+    AmberGlacier = 21,
+    IronGlacier = 22,
+    QuietGlacier = 23,
+    EarlyValley = 24,
 }
 
 [FancyEnum]

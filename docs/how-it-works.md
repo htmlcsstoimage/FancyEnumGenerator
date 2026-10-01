@@ -158,10 +158,18 @@ fields, header names), and it isn't worth a cleverer structure for such a niche 
 - **Field mappings**: members that map a field to the same value share one `case`. When three or more of them have
   consecutive values, the case becomes a range pattern (`>= A and <= C`) instead of a list, so the switch stays short
   even for mostly-uniform mappings.
-- **`Values` / `AsSpan`**: on .NET 8+, `Values` is an `[InlineArray]` struct built on each access. It's a value-type
-  copy, not a heap allocation. `CreateStaticReadonlyCollection` caches it in a static field, filled in lazily, and adds
-  an `AsSpan` view over that field without copying. Everything else is `const`, so an enum has no static state by
-  default.
+- **`Values`**: by default it's `ReadOnlySpan<T> Values => [A, B, C];`. With constant elements the compiler doesn't
+  build an array: it stores the members as data in the assembly and returns a span over it (through
+  `RuntimeHelpers.CreateSpan`), so every access is the same memory, with no allocation and no copy. Before .NET 7 that
+  only works for 1-byte types; for anything wider the compiler would allocate a new array on every access, so the
+  property is wrapped in `#if NET7_0_OR_GREATER` and simply doesn't exist on those targets. The opt-in `ValuesType`
+  options trade this for something storable: `InlineArray` builds a fresh `[InlineArray]` struct on each access (a
+  stack copy, .NET 8+), and `StaticCollection` keeps one array in a static field. Both also get an `AsSpan`. Everything
+  else is `const`, so by default an enum has no static state at all. See [`ValuesType`](settings.md#valuestype).
+- **Target-specific code stays in `#if` blocks.** The generator doesn't emit different code per target framework:
+  the same generated file compiles everywhere, with `#if NET7_0_OR_GREATER` and `#if NET8_0_OR_GREATER` around the
+  members that need those runtimes. Only the HENUM017 warning looks at the target, through the compilation's
+  preprocessor symbols.
 
 ## Incremental generation
 

@@ -10,7 +10,7 @@
     <CompilerVisibleProperty Include="FancyEnumAllowNoUnknown" />
     <CompilerVisibleProperty Include="FancyEnumAllowNonContiguous" />
     <CompilerVisibleProperty Include="FancyEnumNoInlineArray" />
-    <CompilerVisibleProperty Include="FancyEnumCreateStaticReadonlyCollection" />
+    <CompilerVisibleProperty Include="FancyEnumValuesType" />
     <CompilerVisibleProperty Include="FancyEnumIncludeObsolete" />
     <CompilerVisibleProperty Include="FancyEnumDefaultToStringBehavior" />
     <CompilerVisibleProperty Include="FancyEnumDefaultToStringCustomField" />

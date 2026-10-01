@@ -166,36 +166,48 @@ Adds `IsValidPrefixFancy(prefix, next)`, which answers "could these UTF-8 bytes 
 streaming decoders that want to give up on an unknown name early instead of buffering all of it. It's niche, and
 independent of `CreateByteParsing`. See [its own page](is-valid-prefix.md).
 
-### Collections: `CreateStaticReadonlyCollection`, `NoInlineArray`
+### Collections: `ValuesType`, `NoInlineArray`
 
-#### `CreateStaticReadonlyCollection`
+#### `ValuesType`
 
-**Default:** `false`
+**Default:** `Span`
 
-`Values` lists the declared members, except `Unknown` and any marked [`ExcludeFromValues`](#excludefromvalues). By
-default it's built fresh on each access as an inline-array struct (.NET 8+), which is a value copy on the stack, not
-a heap allocation, and there's no static state at all. That fits most uses: `foreach (var fruit in Fruit.Values)`.
+`Values` lists the declared members, except `Unknown` and any marked [`ExcludeFromValues`](#excludefromvalues).
+`ValuesType` (a `FancyEnumValuesType`) picks what it returns:
 
-`CreateStaticReadonlyCollection = true` keeps one copy in a static field instead, filled in on first access, and adds
-`AsSpan`: a `ReadOnlySpan<T>` over that field, with no copy. Use it when you pass the members around as a span, or
-read them very often.
+| `ValuesType` | `Values` is | Can be stored / kept across `await` | Cost | Targets |
+|---|---|---|---|---|
+| `Span` (default) | `ReadOnlySpan<T>` over static data in your assembly | No, it's a ref struct | Nothing: no allocation, no copy, no static field | .NET 7+; on older targets only 1-byte enums (`byte`, `sbyte`) |
+| `InlineArray` | `{Name}Array`, a fresh `[InlineArray]` copy | Yes | A copy of every member per access, on the stack | .NET 8+ |
+| `StaticCollection` | `IReadOnlyList<T>` over a cached array | Yes | One small array, created once | Every target |
 
-What you get depends on the target and on `NoInlineArray`:
+`InlineArray` and `StaticCollection` also add `AsSpan`, a zero-copy `ReadOnlySpan<T>` over the same members, for
+loops and LINQ-over-span code. With `Span`, `Values` already is that span.
 
-| | Default | `CreateStaticReadonlyCollection = true` |
-|---|---|---|
-| .NET 8+ | `Values`: inline array, built per access | `Values`: inline array, cached; `AsSpan` |
-| Older targets, or `NoInlineArray = true` | Nothing generated | `Values`: `IReadOnlyList<T>` over a static array; `AsSpan` |
+`Span` is the default because most code just iterates: `foreach (var fruit in Fruit.Values)`. There the span is as
+cheap as enumeration gets. The compiler stores the members as data in your assembly, so each access returns a span
+over the same memory. In a Debug build the JIT doesn't optimize `RuntimeHelpers.CreateSpan`, so it allocates there;
+Release builds don't. When you need to keep the members in a field or across an `await`, choose `InlineArray` (no
+heap at all, but a copy per access) or `StaticCollection` (no copy, one cached array). You can set it per enum, per
+assembly, or repo-wide with `<FancyEnumValuesType>InlineArray</FancyEnumValuesType>`.
 
-`Values` is an `IReadOnlyList<T>` rather than the array itself, so callers can't modify the shared copy.
+`StaticCollection`'s `Values` is an `IReadOnlyList<T>` rather than the array itself, so callers can't modify the shared
+copy. Enumerating it through the interface is slower than a span, so prefer its `AsSpan` in hot loops.
+
+**When it isn't available.** On a target that can't provide the chosen type, `Values` (and `AsSpan`, where it depends
+on the same feature) is left out for that target only, so a multi-targeted project still builds its other targets.
+If you set `ValuesType` explicitly, on the enum, the assembly, or in MSBuild, this is reported as the warning
+**HENUM017**. That happens for `Span` on an enum wider than a byte on targets older than .NET 7, for `InlineArray` on
+targets older than .NET 8, and for `InlineArray` together with `NoInlineArray`. Leaving `ValuesType` at its default
+never warns. Promote it with `<WarningsAsErrors>HENUM017</WarningsAsErrors>` if you'd rather it fail the build.
 
 #### `NoInlineArray`
 
 **Default:** `false`
 
-Stops the generator from emitting the `{Name}Array` inline-array struct on .NET 8+. Without it, `Values` and `AsSpan`
-exist only with `CreateStaticReadonlyCollection` (backed by a plain array), and flags enums lose `ListFlagMembers`.
-It's for when you'd rather not have the extra public struct in your assembly.
+Stops the generator from emitting any `{Name}Array` inline-array struct. Flags enums then lose `ListFlagMembers`, and
+`ValuesType = InlineArray` isn't available (**HENUM017**). It's for when you'd rather not have the extra public struct
+in your assembly.
 
 ## Assembly-wide only
 

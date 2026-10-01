@@ -95,6 +95,7 @@ public class DiagnosticTests
             public sealed class MetaAttribute : System.Attribute { public int[]? Sizes { get; set; } }
             [FancyEnum] public enum E { Unknown, [Meta(Sizes = new[] { 1 })] A }
             """ },
+        { "HENUM017", "InlineArray values with NoInlineArray", "[FancyEnum(ValuesType = FancyEnumValuesType.InlineArray, NoInlineArray = true)] public enum E { Unknown, A, B }" },
         { "HENUM015", "read-only property no constructor feeds", """
             [FancyEnumMemberSet, System.AttributeUsage(System.AttributeTargets.Field)]
             public sealed class MetaAttribute : System.Attribute { public string Label { get; } = "fixed"; }
@@ -184,6 +185,43 @@ public class DiagnosticTests
     {
         _ = because;
         var run = GeneratorHarness.Run(Usings + source);
+        run.AssertNoGeneratorDiagnostics();
+        run.AssertCompilesCleanly();
+    }
+
+    /// <summary>netstandard2.0 has neither RuntimeHelpers.CreateSpan nor inline arrays, so some explicit Values types can't be honored there.</summary>
+    public static TheoryData<string, string> DownlevelValuesTypeTriggers => new()
+    {
+        { "explicit Span on an int enum", "[FancyEnum(ValuesType = FancyEnumValuesType.Span)] public enum E { Unknown, A, B }" },
+        { "Span from an assembly default on a long enum", "[assembly: FancyEnumDefaults(ValuesType = FancyEnumValuesType.Span)] [FancyEnum] public enum E : long { Unknown, A, B }" },
+        { "InlineArray", "[FancyEnum(ValuesType = FancyEnumValuesType.InlineArray)] public enum E : byte { Unknown, A, B }" },
+    };
+
+    [Theory]
+    [MemberData(nameof(DownlevelValuesTypeTriggers))]
+    public void ReportsUnavailableValuesTypeDownlevel(string because, string source)
+    {
+        _ = because;
+        var run = GeneratorHarness.Run(Usings + source, TargetProfile.NetStandard20);
+        Assert.Equal("HENUM017", Assert.Single(run.GeneratorDiagnostics).Id);
+        run.AssertCompilesCleanly();
+    }
+
+    public static TheoryData<string, string> DownlevelValuesTypeLookAlikes => new()
+    {
+        { "the default Span, not set explicitly, is left out silently", "[FancyEnum] public enum E { Unknown, A, B }" },
+        { "explicit Span on a byte enum is static data everywhere", "[FancyEnum(ValuesType = FancyEnumValuesType.Span)] public enum E : byte { Unknown, A, B }" },
+        { "explicit Span on an sbyte enum is static data everywhere", "[FancyEnum(ValuesType = FancyEnumValuesType.Span)] public enum E : sbyte { Unknown, A, B }" },
+        { "StaticCollection works everywhere", "[FancyEnum(ValuesType = FancyEnumValuesType.StaticCollection)] public enum E : long { Unknown, A, B }" },
+        { "an enum with nothing to list has no Values to miss", "[FancyEnum(ValuesType = FancyEnumValuesType.InlineArray)] public enum E { Unknown }" },
+    };
+
+    [Theory]
+    [MemberData(nameof(DownlevelValuesTypeLookAlikes))]
+    public void StaysQuietDownlevel(string because, string source)
+    {
+        _ = because;
+        var run = GeneratorHarness.Run(Usings + source, TargetProfile.NetStandard20);
         run.AssertNoGeneratorDiagnostics();
         run.AssertCompilesCleanly();
     }

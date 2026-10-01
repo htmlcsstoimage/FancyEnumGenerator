@@ -5,38 +5,9 @@ using thisEnum = global::Beverage;
 using CharSpan = global::System.ReadOnlySpan<char>;
 using StringComparison = global::System.StringComparison;
 using static global::System.MemoryExtensions;
-#if NET8_0_OR_GREATER
-using InlineArray = global::System.Runtime.CompilerServices.InlineArrayAttribute;
-#endif
-#if NET8_0_OR_GREATER
-/// <summary>A fixed-size inline buffer of 3 <see cref="global::Beverage"/> values, as returned by <c>Values</c>/<c>ListFlagMembers</c>: a value type, so no heap allocation. Index it, <c>foreach</c> over it, or convert it to a span.</summary>
-[InlineArray(3)]
-public struct BeverageArray {
-	private global::Beverage _element0;
-}
-#endif
 /// <summary>FancyEnum-generated extension members, and compile-time constants, for <see cref="global::Beverage"/>.</summary>
 public static partial class BeverageFancyEnumExtensions {
-	#if NET8_0_OR_GREATER
-	private static BeverageArray s_values;
-	private static volatile bool s_valuesInitialized;
-	private static void EnsureBeverageValues() {
-		if (!s_valuesInitialized) {
-			s_values = CreateBeverageValues();
-			s_valuesInitialized = true;
-		}
-		
-	}
-	private static BeverageArray CreateBeverageValues() {
-		BeverageArray values = default;
-		values[0] = thisEnum.Coffee;
-		values[1] = thisEnum.Tea;
-		values[2] = thisEnum.Juice;
-		return values;
-	}
-	#else
 	private static readonly global::Beverage[] s_values = [thisEnum.Coffee, thisEnum.Tea, thisEnum.Juice];
-	#endif
 	extension(global::Beverage value) {
 		/// <summary>This value as its underlying <c>int</c>.</summary>
 		public int AsUnderlying => (int)value;
@@ -171,29 +142,10 @@ public static partial class BeverageFancyEnumExtensions {
 		/// <param name="input">The text to parse.</param>
 		/// <param name="ignoreCase">Whether to ignore ASCII case.</param>
 		public static global::Beverage ParseOrUnknown(CharSpan input, bool ignoreCase) => thisEnum.TryParseFancy(input, ignoreCase, out var result) ? result : thisEnum.Unknown;
-		#if NET8_0_OR_GREATER
-		/// <summary>Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order, cached in a static field on first access. Returned by value, so the caller gets its own copy of the inline buffer.</summary>
-		public static BeverageArray Values {
-			get {
-				EnsureBeverageValues();
-				return s_values;
-			}
-			
-		}
-		/// <summary>The same members as <c>Values</c>, as a read-only span over the cached static storage: no copy, no allocation.</summary>
-		public static global::System.ReadOnlySpan<global::Beverage> AsSpan {
-			get {
-				EnsureBeverageValues();
-				return global::System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref global::System.Runtime.CompilerServices.Unsafe.As<BeverageArray, global::Beverage>(ref global::System.Runtime.CompilerServices.Unsafe.AsRef(in s_values)), 3);
-			}
-			
-		}
-		#else
-		/// <summary>Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order, backed by a shared static array. Read-only: the array itself is never exposed.</summary>
+		/// <summary>Every declared member except the Unknown member and any marked <c>ExcludeFromValues</c>, in numeric order, as a read-only list over an array created once and cached in a static field.</summary>
 		public static global::System.Collections.Generic.IReadOnlyList<global::Beverage> Values => s_values;
-		/// <summary>The same members as <c>Values</c>, as a read-only span over the cached static storage: no copy, no allocation.</summary>
+		/// <summary>The same members as <c>Values</c>, as a read-only span over the cached array: no copy, no allocation.</summary>
 		public static global::System.ReadOnlySpan<global::Beverage> AsSpan => s_values;
-		#endif
 	}
 	/// <summary>The number of distinct declared values, including the Unknown member (members sharing a numeric value count once). A compile-time constant, for where C# requires one (<c>const</c> fields, attribute arguments, <c>case</c> labels); the same value is also a static extension property on the enum.</summary>
 	public const int Length = 4;
