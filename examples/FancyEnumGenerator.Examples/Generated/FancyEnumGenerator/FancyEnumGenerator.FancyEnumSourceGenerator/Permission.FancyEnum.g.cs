@@ -6,7 +6,7 @@ using CharSpan = global::System.ReadOnlySpan<char>;
 using StringComparison = global::System.StringComparison;
 using static global::System.MemoryExtensions;
 #if NET8_0_OR_GREATER
-/// <summary>A fixed-size inline buffer of 3 <see cref="global::Permission"/> values, as returned by <c>Values</c>/<c>ListFlagMembers</c>: a value type, so no heap allocation. Index it, <c>foreach</c> over it, or convert it to a span.</summary>
+/// <summary>A fixed-size inline buffer of 3 <see cref="global::Permission"/> values, as returned by <c>ListFlagMembers</c>: a value type, so no heap allocation. Index it, <c>foreach</c> over it, or convert it to a span.</summary>
 [global::System.Runtime.CompilerServices.InlineArray(3)]
 public struct PermissionArray {
 	private global::Permission _element0;
